@@ -2,6 +2,7 @@ type ProgramInfo = {
     program: WebGLProgram,
     attribLocations: {
       vertexPosition: GLint,
+      colorPosition: GLint
     },
     uniformLocations: {
       projectionMatrix: WebGLUniformLocation | null,
@@ -10,7 +11,8 @@ type ProgramInfo = {
 };
 
 type Buffers = {
-    position: WebGLBuffer | null
+    position: WebGLBuffer | null,
+    color: WebGLBuffer | null
 }
 
 export type {ProgramInfo, Buffers}

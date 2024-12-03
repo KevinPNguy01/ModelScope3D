@@ -21,6 +21,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, b
     mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6]);
 
     setPositionAttribute(gl, programInfo, buffers);
+    setColorAttribute(gl, programInfo, buffers);
 
     gl.useProgram(programInfo.program);
 
@@ -56,4 +57,22 @@ function setPositionAttribute(gl: WebGLRenderingContext, programInfo: ProgramInf
         offset
     );
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+}
+
+function setColorAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers) {
+    const numComponents = 4;
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+    gl.vertexAttribPointer(
+        programInfo.attribLocations.colorPosition,
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset
+    );
+    gl.enableVertexAttribArray(programInfo.attribLocations.colorPosition);
 }

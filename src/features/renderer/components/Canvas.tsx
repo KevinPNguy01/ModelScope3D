@@ -17,10 +17,11 @@ export function Canvas() {
                 program: shaderProgram,
                 attribLocations: {
                   vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
+                  colorPosition: gl.getAttribLocation(shaderProgram, "aVertexColor")
                 },
                 uniformLocations: {
                   projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
-                  modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
+                  modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix")
                 },
               };
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
