@@ -1,7 +1,7 @@
 import { mat4 } from "gl-matrix";
 import { Buffers, ProgramInfo } from "../types";
 
-export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers) {
+export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers, rotation: number) {
     gl.clearColor(0, 0, 0, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);
@@ -19,6 +19,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, b
 
     const modelViewMatrix = mat4.create();
     mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rotation, [0, 0, 1]);
 
     setPositionAttribute(gl, programInfo, buffers);
     setColorAttribute(gl, programInfo, buffers);

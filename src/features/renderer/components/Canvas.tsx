@@ -24,11 +24,24 @@ export function Canvas() {
                   modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix")
                 },
               };
-            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
 
             const buffers = initBuffers(gl);
-            drawScene(gl, programInfo, buffers);
+
+			let rotation = 0;
+			let deltaTime = 0;
+			let then = 0;
+
+			function render(now: number) {
+				now *= 0.001;
+				deltaTime = now - then;
+				then = now;
+
+				drawScene(gl!, programInfo, buffers, rotation);
+				rotation += deltaTime;
+
+				requestAnimationFrame(render);
+			}
+			requestAnimationFrame(render);
         })()
     }, []);
 
