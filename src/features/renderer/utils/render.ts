@@ -1,7 +1,8 @@
 import { mat4 } from "gl-matrix";
 import { Buffers, ProgramInfo } from "../types";
+import { loadTexture } from "./textures";
 
-export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers, rotation: number) {
+export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers, texture: WebGLTexture, rotation: number) {
     gl.clearColor(0, 0, 0, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);
@@ -23,7 +24,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, b
     mat4.rotate(modelViewMatrix, modelViewMatrix, rotation * 0.3, [1, 0, 0]);
 
     setPositionAttribute(gl, programInfo, buffers);
-    setColorAttribute(gl, programInfo, buffers);
+    setTextureAttribute(gl, programInfo, buffers);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
     gl.useProgram(programInfo.program);
@@ -38,6 +39,9 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, b
         false,
         modelViewMatrix
     );
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
     const offset = 0;
     const vertexCount = 36;
@@ -79,4 +83,22 @@ function setColorAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, 
         offset
     );
     gl.enableVertexAttribArray(programInfo.attribLocations.colorPosition);
+}
+
+function setTextureAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers) {
+    const num = 2;
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
+    gl.vertexAttribPointer(
+        programInfo.attribLocations.textureCoord,
+        num,
+        type,
+        normalize,
+        stride,
+        offset
+    );
+    gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 }

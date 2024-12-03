@@ -3,6 +3,7 @@ import { initShaderProgram } from "../utils/shaders";
 import { ProgramInfo } from "../types";
 import { initBuffers } from "../utils/buffers";
 import { drawScene } from "../utils/render";
+import { loadTexture } from "../utils/textures";
 
 export function Canvas() {
     const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -17,31 +18,35 @@ export function Canvas() {
                 program: shaderProgram,
                 attribLocations: {
                   vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-                  colorPosition: gl.getAttribLocation(shaderProgram, "aVertexColor")
+                  colorPosition: -1,
+                  textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord")
                 },
                 uniformLocations: {
                   projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
-                  modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix")
+                  modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
+                  uSampler: gl.getUniformLocation(shaderProgram, "uSampler")
                 },
               };
 
             const buffers = initBuffers(gl);
+            const texture = loadTexture(gl, "bricks.jpg");
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-			let rotation = 0;
-			let deltaTime = 0;
-			let then = 0;
+            let rotation = 0;
+            let deltaTime = 0;
+            let then = 0;
 
-			function render(now: number) {
-				now *= 0.001;
-				deltaTime = now - then;
-				then = now;
+            function render(now: number) {
+              now *= 0.001;
+              deltaTime = now - then;
+              then = now;
 
-				drawScene(gl!, programInfo, buffers, rotation);
-				rotation += deltaTime;
+              drawScene(gl!, programInfo, buffers, texture, rotation);
+              rotation += deltaTime;
 
-				requestAnimationFrame(render);
-			}
-			requestAnimationFrame(render);
+              requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
         })()
     }, []);
 
