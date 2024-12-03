@@ -1,4 +1,4 @@
-import { Canvas } from "./components/Canvas"
+import { Canvas } from "./features/renderer/components/Canvas"
 
 function App() {
 
