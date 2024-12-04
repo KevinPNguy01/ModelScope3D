@@ -3,7 +3,7 @@ import { MeshWithBuffers } from "webgl-obj-loader";
 import { Buffers, ProgramInfo } from "../types";
 import { mat4_inverse } from "./mat4";
 
-export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, mesh: MeshWithBuffers, texture: WebGLTexture, rotation: number) {
+export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, meshes: MeshWithBuffers[], texture: WebGLTexture, rotation: number) {
     gl.clearColor(.235, .235, .235, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);
@@ -20,9 +20,10 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
     mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [0, -.75, -6]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0.5, -6]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 8, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, rotation * 0.7, [0, 1, 0]);
+    mat4.scale(modelViewMatrix, modelViewMatrix, [0.025, 0.025, 0.025]);
 
     const normalMatrix = mat4.create();
     mat4_inverse(modelViewMatrix, normalMatrix);
@@ -31,23 +32,6 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
     gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
-    gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    if (!mesh.textures.length) {
-        gl.disableVertexAttribArray(programInfo.attribLocations.textureCoord);
-    }
-    else {
-        gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
-        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.textureBuffer);
-        gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, mesh.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normalBuffer);
-    gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, mesh.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
 
     gl.useProgram(programInfo.program);
 
@@ -70,7 +54,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
     const lightPos = [0, 0, 0]                   // Camera-space position of the light source
     const lightPower = 10;  
 
-    const diffuseColor = [0.7765, 0.2392, 0.5216];    // Diffuse color
+    const diffuseColor = [1, 0, 0];    // Diffuse color
     const specularColor = [1.0, 1.0, 1.0];            // Default white
     const ambientIntensity = 0.0;                     // Ambient
 
@@ -89,7 +73,22 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
-    gl.drawElements(gl.TRIANGLES, mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    
+
+    for (const mesh of meshes) {         
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+        gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.textureBuffer);
+        gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, mesh.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normalBuffer);
+        gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, mesh.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+        
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+        gl.drawElements(gl.TRIANGLES, mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    }
 }
 
 function setPositionAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers) {

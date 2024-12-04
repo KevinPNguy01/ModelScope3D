@@ -25,7 +25,6 @@ export function loadTexture(gl: WebGLRenderingContext, path: string) {
 
     const image = new Image();
     image.onload = () => {
-        console.log(image.src);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(
             gl.TEXTURE_2D,

@@ -40,7 +40,7 @@ export function Canvas() {
 
 			//const buffers = initBuffers(gl);
 			const texture = loadTexture(gl, "diamond_ore.jpeg");
-			const model = await loadModel(gl, "stanford_bunny.obj");
+			const meshes = await loadModel(gl, "xyzrgb_dragon.obj");
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 			let rotation = 0;
@@ -52,7 +52,7 @@ export function Canvas() {
 				deltaTime = now - then;
 				then = now;
 
-				drawScene(gl!, programInfo, model, texture, rotation);
+				drawScene(gl!, programInfo, meshes, texture, rotation);
 				rotation += deltaTime;
 
 				requestAnimationFrame(render);

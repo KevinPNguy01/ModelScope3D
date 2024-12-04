@@ -35,7 +35,7 @@ void main(void) {
     vec3 h_norm = (i_norm + o_norm) / length(i_norm + o_norm);
 
     vec3 diffuseColor = uDiffuseColor;
-    if (vTextureCoord != vec2(-1, -1)) {
+    if (vTextureCoord.x >= 0.0 && vTextureCoord.y >= 0.0) {
         diffuseColor = texture2D(uSampler, vTextureCoord).xyz;
     }
     gl_FragColor = vec4(uAmbient * diffuseColor, 1.0);
