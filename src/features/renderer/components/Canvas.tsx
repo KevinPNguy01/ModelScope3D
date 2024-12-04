@@ -4,6 +4,7 @@ import { ProgramInfo } from "../types";
 import { initBuffers } from "../utils/buffers";
 import { drawScene } from "../utils/render";
 import { loadTexture } from "../utils/textures";
+import { loadModel } from "../utils/models";
 
 export function Canvas() {
 	const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -40,6 +41,7 @@ export function Canvas() {
 
 			const buffers = initBuffers(gl);
 			const texture = loadTexture(gl, "diamond_ore.jpeg");
+			const model = loadModel("stanford_bunny.obj");
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 			let rotation = 0;
