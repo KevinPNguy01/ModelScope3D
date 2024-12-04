@@ -1,8 +1,9 @@
 import { mat4 } from "gl-matrix";
+import { MeshWithBuffers } from "webgl-obj-loader";
 import { Buffers, ProgramInfo } from "../types";
 import { mat4_inverse } from "./mat4";
 
-export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers, texture: WebGLTexture, rotation: number) {
+export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, mesh: MeshWithBuffers, texture: WebGLTexture, rotation: number) {
     gl.clearColor(.235, .235, .235, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);
@@ -14,26 +15,40 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, b
     const fov = (45 * Math.PI) / 180;
     const aspect =  canvas.clientWidth / canvas.clientHeight;
     const zNear = 0.1;
-    const zFar = 100;
+    const zFar = 1000;
     const projectionMatrix = mat4.create();
     mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4, [1, 0, 0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [0, -.75, -6]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 8, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, rotation * 0.7, [0, 1, 0]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, rotation * 0.3, [0, 0, 1]);
-
 
     const normalMatrix = mat4.create();
     mat4_inverse(modelViewMatrix, normalMatrix);
     mat4.transpose(normalMatrix, normalMatrix);
 
-    setPositionAttribute(gl, programInfo, buffers);
-    setNormalAttribute(gl, programInfo, buffers);
-    setTextureAttribute(gl, programInfo, buffers);
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
+    gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+    gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    if (!mesh.textures.length) {
+        gl.disableVertexAttribArray(programInfo.attribLocations.textureCoord);
+    }
+    else {
+        gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
+        gl.bindBuffer(gl.ARRAY_BUFFER, mesh.textureBuffer);
+        gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, mesh.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normalBuffer);
+    gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, mesh.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+
     gl.useProgram(programInfo.program);
 
     gl.uniformMatrix4fv(
@@ -52,15 +67,15 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, b
         normalMatrix
     );
 
-    var lightPos = [0, 0, 10]                   // Camera-space position of the light source
-    var lightPower = 50;  
+    const lightPos = [0, 0, 0]                   // Camera-space position of the light source
+    const lightPower = 10;  
 
-    var diffuseColor = [0.7765, 0.2392, 0.5216];    // Diffuse color
-    var specularColor = [1.0, 1.0, 1.0];            // Default white
-    var ambientIntensity = 0.0;                     // Ambient
+    const diffuseColor = [0.7765, 0.2392, 0.5216];    // Diffuse color
+    const specularColor = [1.0, 1.0, 1.0];            // Default white
+    const ambientIntensity = 0.0;                     // Ambient
 
-    var indexOfRefraction = 0.1;
-    var beta = 1;
+    const indexOfRefraction = 0.1;
+    const beta = 1;
 
     gl.uniform3fv(programInfo.uniformLocations.lightPos, lightPos);
     gl.uniform1f(programInfo.uniformLocations.lightPower, lightPower);
@@ -74,10 +89,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, b
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
-    const offset = 0;
-    const vertexCount = 36;
-    const type = gl.UNSIGNED_SHORT;
-    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+    gl.drawElements(gl.TRIANGLES, mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
 }
 
 function setPositionAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers) {
@@ -106,14 +118,14 @@ function setNormalAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo,
     const offset = 0;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
     gl.vertexAttribPointer(
-        programInfo.attribLocations.normalPosition,
+        programInfo.attribLocations.vertexNormal,
         numComponents,
         type,
         normalize,
         stride,
         offset
     );
-    gl.enableVertexAttribArray(programInfo.attribLocations.normalPosition);
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
 }
 
 function setColorAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers) {
@@ -124,14 +136,14 @@ function setColorAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, 
     const offset = 0;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
     gl.vertexAttribPointer(
-        programInfo.attribLocations.colorPosition,
+        programInfo.attribLocations.vertexColor,
         numComponents,
         type,
         normalize,
         stride,
         offset
     );
-    gl.enableVertexAttribArray(programInfo.attribLocations.colorPosition);
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
 }
 
 function setTextureAttribute(gl: WebGLRenderingContext, programInfo: ProgramInfo, buffers: Buffers) {

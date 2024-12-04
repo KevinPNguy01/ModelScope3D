@@ -1,10 +1,9 @@
 import { useEffect, useRef } from "react";
-import { initShaderProgram } from "../utils/shaders";
 import { ProgramInfo } from "../types";
-import { initBuffers } from "../utils/buffers";
-import { drawScene } from "../utils/render";
-import { loadTexture } from "../utils/textures";
 import { loadModel } from "../utils/models";
+import { drawScene } from "../utils/render";
+import { initShaderProgram } from "../utils/shaders";
+import { loadTexture } from "../utils/textures";
 
 export function Canvas() {
 	const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -19,8 +18,8 @@ export function Canvas() {
 				program: shaderProgram,
 				attribLocations: {
 					vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-					normalPosition: gl.getAttribLocation(shaderProgram, "aVertexNormal"),
-					colorPosition: -1,
+					vertexNormal: gl.getAttribLocation(shaderProgram, "aVertexNormal"),
+					vertexColor: -1,
 					textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord")
 				},
 				uniformLocations: {
@@ -39,9 +38,9 @@ export function Canvas() {
 				},
 			};
 
-			const buffers = initBuffers(gl);
+			//const buffers = initBuffers(gl);
 			const texture = loadTexture(gl, "diamond_ore.jpeg");
-			const model = loadModel("stanford_bunny.obj");
+			const model = await loadModel(gl, "stanford_bunny.obj");
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 			let rotation = 0;
@@ -53,7 +52,7 @@ export function Canvas() {
 				deltaTime = now - then;
 				then = now;
 
-				drawScene(gl!, programInfo, buffers, texture, rotation);
+				drawScene(gl!, programInfo, model, texture, rotation);
 				rotation += deltaTime;
 
 				requestAnimationFrame(render);

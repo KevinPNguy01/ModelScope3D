@@ -1,9 +1,9 @@
-import { Mesh } from "webgl-obj-loader";
+import { initMeshBuffers, Mesh } from "webgl-obj-loader";
 
-export async function loadModel(path: string) {
+export async function loadModel(gl: WebGLRenderingContext, path: string) {
     const modelString = await loadModelFile(path);
     const mesh = new Mesh(modelString);
-    console.log(mesh.vertices)
+    return initMeshBuffers(gl, mesh);
 }
 
 const loadModelFile = async (path: string): Promise<string> => {

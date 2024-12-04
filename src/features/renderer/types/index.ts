@@ -2,8 +2,8 @@ type ProgramInfo = {
     program: WebGLProgram,
     attribLocations: {
 		vertexPosition: GLint,
-    normalPosition: GLint,
-		colorPosition: GLint,
+    	vertexNormal: GLint,
+		vertexColor: GLint,
 		textureCoord: GLint
     },
     uniformLocations: {
@@ -30,4 +30,5 @@ type Buffers = {
     textureCoord: WebGLBuffer | null
 }
 
-export type {ProgramInfo, Buffers}
+export type { Buffers, ProgramInfo };
+
