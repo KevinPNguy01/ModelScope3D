@@ -2,12 +2,14 @@ import { Buffers } from "../types";
 
 export function initBuffers(gl: WebGLRenderingContext) {
     const positionBuffer = initPositionBuffer(gl);
+    const normalBuffer = initNormalBuffer(gl);
     const colorBuffer = initColorBuffer(gl);
     const indexBuffer = initIndexBuffer(gl);
     const textureCoordBuffer = initTextureBuffer(gl);
 
     return {
         position: positionBuffer,
+        normal: normalBuffer,
         color: colorBuffer,
         indices: indexBuffer,
         textureCoord: textureCoordBuffer
@@ -41,6 +43,35 @@ function initPositionBuffer(gl: WebGLRenderingContext) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
     return positionBuffer;
+}
+
+function initNormalBuffer(gl: WebGLRenderingContext) {
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+
+    const normals = [
+        // Front face
+        0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0.0, 0.0, 1.0,
+    
+        // Back face
+        0.0, 0.0, -1.0,  0.0, 0.0, -1.0,  0.0, 0.0, -1.0,  0.0, 0.0, -1.0,
+    
+        // Top face
+        0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,
+    
+        // Bottom face
+        0.0, -1.0, 0.0,  0.0, -1.0, 0.0,  0.0, -1.0, 0.0,  0.0, -1.0, 0.0,
+    
+        // Right face
+        1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,
+    
+        // Left face
+        -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,
+    ];    
+      
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
+    return normalBuffer;
 }
 
 function initColorBuffer(gl: WebGLRenderingContext) {
