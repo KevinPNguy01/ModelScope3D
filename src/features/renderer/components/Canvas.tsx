@@ -2,6 +2,7 @@ import { mat4, vec3 } from "gl-matrix";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
+import { selectAmbientIntensity, selectDiffuseColor, selectLightPosition, selectPower, selectSpecularColor } from "../../../stores/selectors/lighting";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ProgramInfo } from "../types";
 import { mat4_inverse } from "../utils/mat4";
@@ -14,12 +15,18 @@ export function Canvas() {
 	const canvas = useRef<HTMLCanvasElement | null>(null);
 	const [animationFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
 	const [canceledFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
-	const position = useSelector(selectPosition);
-    const scale = useSelector(selectScale);
-    const rotation = useSelector(selectRotation);
 	const [meshes, setMeshes] = useState<MeshWithBuffers[]>([]);
 	const [texture, setTexture] = useState<WebGLTexture>();
 	const [programInfo, setProgramInfo] = useState<ProgramInfo>();
+	const position = useSelector(selectPosition);
+    const scale = useSelector(selectScale);
+    const rotation = useSelector(selectRotation);
+
+	const lightPosition = useSelector(selectLightPosition);
+    const diffuseColor = useSelector(selectDiffuseColor);
+    const specularColor = useSelector(selectSpecularColor);
+    const power = useSelector(selectPower);
+    const ambientIntensity = useSelector(selectAmbientIntensity);
 
 	useEffect(() => {
 		(async () => {
@@ -108,13 +115,20 @@ export function Canvas() {
 				false,
 				normalMatrix
 			);
+
+			gl.uniform3fv(programInfo.uniformLocations.lightPos, lightPosition);
+			gl.uniform1f(programInfo.uniformLocations.lightPower, power);
+			gl.uniform3fv(programInfo.uniformLocations.kd, diffuseColor);
+			gl.uniform3fv(programInfo.uniformLocations.specular, specularColor);
+			gl.uniform1f(programInfo.uniformLocations.ambient, ambientIntensity);
+
 			drawScene(gl!, programInfo, meshes, texture!);
 		})();
 
 		return () => {
 			cancelAnimationFrame(animationFrame.number);
 		};
-	}, [animationFrame, canceledFrame, meshes, position, programInfo, rotation, scale, texture]);
+	}, [ambientIntensity, animationFrame, canceledFrame, diffuseColor, lightPosition, meshes, position, power, programInfo, rotation, scale, specularColor, texture]);
 
 	return (
 		<canvas ref={canvas} id="gl-canvas" width="640" height="480"></canvas>

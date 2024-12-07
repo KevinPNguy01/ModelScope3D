@@ -13,21 +13,9 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
     gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 
-    const lightPos = [0, 0, 0]                   // Camera-space position of the light source
-    const lightPower = 10;  
-
-    const diffuseColor = [0.9647058823529412, 0.8117647058823529, 0.3411764705882353];    // Diffuse color
-    const specularColor = [1.0, 1.0, 1.0];            // Default white
-    const ambientIntensity = 0.1;                     // Ambient
-
     const indexOfRefraction = 0.1;
     const beta = 1;
 
-    gl.uniform3fv(programInfo.uniformLocations.lightPos, lightPos);
-    gl.uniform1f(programInfo.uniformLocations.lightPower, lightPower);
-    gl.uniform3fv(programInfo.uniformLocations.kd, diffuseColor);
-    gl.uniform3fv(programInfo.uniformLocations.specular, specularColor);
-    gl.uniform1f(programInfo.uniformLocations.ambient, ambientIntensity);
     gl.uniform1f(programInfo.uniformLocations.indexOfRefraction, indexOfRefraction);
     gl.uniform1f(programInfo.uniformLocations.beta, beta);
 
