@@ -35,7 +35,7 @@ export function Canvas() {
 			const gl = canvas.current!.getContext("webgl");
 			if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 
-			setMeshes(await loadModel(gl, "stanford_bunny.obj"));
+			setMeshes(await loadModel(gl, "car.obj"));
 			setTexture(loadTexture(gl, "bricks.jpg"));
 
 			const shaderProgram = await initShaderProgram(gl, "vertex.vs", "fragment.fs");

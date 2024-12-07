@@ -23,11 +23,12 @@ float G1(vec3 v, vec3 h) {
 }
 
 void main(void) {
-    // Dummy variable to ensure the use of all vertex attributes.
-    vec4 zero = vec4(vPosition + vNormal - vPosition - vNormal, 0.0);
-
-    // Task 4
     vec3 n_norm = normalize(vNormal);
+    vec3 viewDir = normalize(-vPosition);
+    if (dot(n_norm, viewDir) < 0.0) {
+        n_norm = -n_norm;
+    }
+
     vec3 i = uLightPos - vPosition;
     vec3 i_norm = normalize(i);
     vec3 o_norm = -(vPosition/length(vPosition));
