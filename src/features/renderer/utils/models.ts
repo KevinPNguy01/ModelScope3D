@@ -9,7 +9,8 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
     const e2 = vec3.create();
     const norm = vec3.create();
 
-    mesh.vertexNormals = Array(mesh.indices.length * 3);
+    // Compute the normals for each vertex by aggregating the normals of each associated face.
+    mesh.vertexNormals = new Array(mesh.vertices.length).fill(0);
     for (let i = 0; i < mesh.indices.length; i += 3) {
         const i1 = (mesh.indices[i]) * 3;
         const i2 = (mesh.indices[i + 1]) * 3;
@@ -27,14 +28,28 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
         const idxs = [i1, i2, i3];
         for (const idx of idxs) {
             for (let j = 0; j < 3; ++j) {
-                mesh.vertexNormals[idx+j] = norm[j];
+                mesh.vertexNormals[idx+j] += norm[j];
             }
         }
     }
-        mesh.textures = [];
-        for (let i = 0; i < mesh.vertices.length / 3 * 2; ++i) {
-            mesh.textures.push(-1);
+
+    // Normalize normals.
+    for (let i = 0; i < mesh.vertexNormals.length; i += 3) {
+        const x = mesh.vertexNormals[i];
+        const y = mesh.vertexNormals[i+1];
+        const z = mesh.vertexNormals[i+2];
+        const len = Math.sqrt(x*x + y*y + z*z);
+        if (len > 0) {
+            mesh.vertexNormals[i] /= len;
+            mesh.vertexNormals[i+1] /= len;
+            mesh.vertexNormals[i+2] /= len;
         }
+    }
+
+    mesh.textures = [];
+    for (let i = 0; i < mesh.vertices.length / 3 * 2; ++i) {
+        mesh.textures.push(-1);
+    }
     
     return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
 }

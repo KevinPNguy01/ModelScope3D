@@ -18,7 +18,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
 
     const diffuseColor = [0.9647058823529412, 0.8117647058823529, 0.3411764705882353];    // Diffuse color
     const specularColor = [1.0, 1.0, 1.0];            // Default white
-    const ambientIntensity = 0.0;                     // Ambient
+    const ambientIntensity = 0.1;                     // Ambient
 
     const indexOfRefraction = 0.1;
     const beta = 1;
