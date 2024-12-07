@@ -1,3 +1,84 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+    --color-primary: rgb(0, 128, 255);
+    --color-secondary: rgb(48, 48, 48);
+    --color-tertiary: rgb(64, 64, 64);
+    --color-quaternary: rgb(80, 80, 80);
+    --color-dim-white: rgb(208, 208, 208);
+}
+
+@layer utilities {
+    .bg-primary {
+        background: var(--color-primary);
+    }
+
+    .bg-secondary {
+        background: var(--color-secondary);
+    }
+
+    .bg-tertiary {
+        background: var(--color-tertiary);
+    }
+
+    .bg-quaternary {
+        background: var(--color-quaternary);
+    }
+
+    .border-primary {
+        border-color: var(--color-primary);
+    }
+
+    .border-secondary {
+        border-color: var(--color-secondary);
+    }
+
+    .border-tertiary {
+        border-color: var(--color-tertiary);
+    }
+
+    .border-quaternary {
+        border-color: var(--color-quaternary);
+    }
+
+    .text-primary {
+        color: var(--color-primary);
+    }
+
+    .text-secondary {
+        color: var(--color-secondary);
+    }
+
+    .text-tertiary {
+        color: var(--color-tertiary);
+    }
+
+    .text-quaternary {
+        color: var(--color-quaternary);
+    }
+}
+
+@layer base {
+    input[type="number"],
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+        outline: none !important;
+    }
+}
+  
+.transformNumberInput::before {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    right: 0;
+    border-width: 4px;
+    border-style: solid;
+    border-color: var(--corner-color);
+    border-bottom-color: transparent !important;
+    border-left-color: transparent !important;
+}

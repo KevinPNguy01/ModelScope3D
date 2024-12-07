@@ -1,9 +1,13 @@
 import { Canvas } from "./features/renderer/components/Canvas"
+import { ControlPanel } from "./features/transform/components/ControlPanel"
 
 function App() {
 
   return (
-    <Canvas/>
+    <div className="flex">
+        <Canvas/>
+        <ControlPanel/>
+    </div>
   )
 }
 
