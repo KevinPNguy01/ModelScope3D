@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { selectAmbientIntensity, selectDiffuseColor, selectLightPosition, selectPower, selectSpecularColor } from "../../../stores/selectors/lighting";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
+import { setAmbientIntensity, setDiffuseColor, setLightPosition, setPower, setSpecularColor } from "../../../stores/slices/lighting";
 import { setPosition, setRotation, setScale } from "../../../stores/slices/transformations";
 import { TransformNumberInput } from "./NumberInput";
 
@@ -9,6 +11,14 @@ export function ControlPanel() {
     const scale = useSelector(selectScale);
     const rotation = useSelector(selectRotation);
     const dispatch = useDispatch();
+
+    const lightPosition = useSelector(selectLightPosition);
+    const diffuseColor = useSelector(selectDiffuseColor);
+    const specularColor = useSelector(selectSpecularColor);
+    const power = useSelector(selectPower);
+    const ambientIntensity = useSelector(selectAmbientIntensity);
+    //const indexOfRefraction = useSelector(selectIndexOfRefraction);
+    //const beta = useSelector(selectBeta);
 
     const panelRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +58,27 @@ export function ControlPanel() {
                 <TransformNumberInput value={rotation[0]} setValue={(val: number) => dispatch(setRotation({value: val, index: 0}))} title="Rotation X" step={1} color="#ff0000"/>
                 <TransformNumberInput value={rotation[1]} setValue={(val: number) => dispatch(setRotation({value: val, index: 1}))} title="Rotation Y" step={1} color="#00cc00"/>
                 <TransformNumberInput value={rotation[2]} setValue={(val: number) => dispatch(setRotation({value: val, index: 2}))} title="Rotation Z" step={1} color="#0080ff"/>
+            </div>
+            <br/>
+            <span>Light Position</span>
+            <div className={`flex gap-1`}>
+                <TransformNumberInput value={lightPosition[0]} setValue={(val: number) => dispatch(setLightPosition({value: val, index: 0}))} title="Light Position X" step={.1} color="#ff0000"/>
+                <TransformNumberInput value={lightPosition[1]} setValue={(val: number) => dispatch(setLightPosition({value: val, index: 1}))} title="Light Position Y" step={.1} color="#00cc00"/>
+                <TransformNumberInput value={lightPosition[2]} setValue={(val: number) => dispatch(setLightPosition({value: val, index: 2}))} title="Light Position Z" step={.1} color="#0080ff"/>
+            </div>
+            <span>Diffuse Color</span>
+            <div className={`flex gap-1`}>
+                <TransformNumberInput value={diffuseColor[0]} setValue={(val: number) => dispatch(setDiffuseColor({value: val, index: 0}))} title="Diffuse Red Component" step={.01} color="#ff0000"/>
+                <TransformNumberInput value={diffuseColor[1]} setValue={(val: number) => dispatch(setDiffuseColor({value: val, index: 1}))} title="Diffuse Green Component" step={.01} color="#00cc00"/>
+                <TransformNumberInput value={diffuseColor[2]} setValue={(val: number) => dispatch(setDiffuseColor({value: val, index: 2}))} title="Diffuse Blue Component" step={.01} color="#0080ff"/>
+                <TransformNumberInput value={ambientIntensity} setValue={(val: number) => dispatch(setAmbientIntensity(val))} title="Diffuse Brightness" step={.01} color="none"/>
+            </div>
+            <span>Specular Color</span>
+            <div className={`flex gap-1`}>
+                <TransformNumberInput value={specularColor[0]} setValue={(val: number) => dispatch(setSpecularColor({value: val, index: 0}))} title="Specular Red Component" step={.01} color="#ff0000"/>
+                <TransformNumberInput value={specularColor[1]} setValue={(val: number) => dispatch(setSpecularColor({value: val, index: 1}))} title="Specular Green Component" step={.01} color="#00cc00"/>
+                <TransformNumberInput value={specularColor[2]} setValue={(val: number) => dispatch(setSpecularColor({value: val, index: 2}))} title="Specular Blue Component" step={.01} color="#0080ff"/>
+                <TransformNumberInput value={power} setValue={(val: number) => dispatch(setPower(val))} title="Specular Brightness" step={.1} color="none"/>
             </div>
         </div>
     );

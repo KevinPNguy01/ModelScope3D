@@ -1,6 +1,6 @@
 import { RootState } from "../../app/store";
 
-export const selectPosition = (state: RootState) => state.lighting.position;
+export const selectLightPosition = (state: RootState) => state.lighting.position;
 export const selectDiffuseColor = (state: RootState) => state.lighting.diffuseColor;
 export const selectSpecularColor = (state: RootState) => state.lighting.specularColor;
 export const selectPower = (state: RootState) => state.lighting.power;

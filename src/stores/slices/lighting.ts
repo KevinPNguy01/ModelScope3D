@@ -12,7 +12,7 @@ export const lightingSlice = createSlice({
         beta: 0.5
     },
     reducers: {
-        setPosition: (state, action: PayloadAction<{value: number, index: number}>) => {
+        setLightPosition: (state, action: PayloadAction<{value: number, index: number}>) => {
             const {value, index} = action.payload;
             state.position[index] = value;
         },
@@ -39,5 +39,5 @@ export const lightingSlice = createSlice({
     }
 });
 
-export const {setPosition, setDiffuseColor, setSpecularColor, setPower, setAmbientIntensity, setIndexOfRefraction, setBeta} = lightingSlice.actions;
+export const {setLightPosition, setDiffuseColor, setSpecularColor, setPower, setAmbientIntensity, setIndexOfRefraction, setBeta} = lightingSlice.actions;
 export default lightingSlice.reducer;
