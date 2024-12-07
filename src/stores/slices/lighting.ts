@@ -6,7 +6,7 @@ export const lightingSlice = createSlice({
         position: [0, 0, 0],
         diffuseColor: [1, 1, 1],
         specularColor: [1, 1, 1],
-        power: 1,
+        power: 5,
         ambientIntensity: 0.1,
         indexOfRefraction: 0.1,
         beta: 0.5

@@ -2,7 +2,7 @@ import { mat4, vec3 } from "gl-matrix";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
-import { selectAmbientIntensity, selectDiffuseColor, selectLightPosition, selectPower, selectSpecularColor } from "../../../stores/selectors/lighting";
+import { selectAmbientIntensity, selectBeta, selectDiffuseColor, selectIndexOfRefraction, selectLightPosition, selectPower, selectSpecularColor } from "../../../stores/selectors/lighting";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ProgramInfo } from "../types";
 import { mat4_inverse } from "../utils/mat4";
@@ -27,13 +27,15 @@ export function Canvas() {
     const specularColor = useSelector(selectSpecularColor);
     const power = useSelector(selectPower);
     const ambientIntensity = useSelector(selectAmbientIntensity);
+	const indexOfRefraction = useSelector(selectIndexOfRefraction);
+	const beta = useSelector(selectBeta);
 
 	useEffect(() => {
 		(async () => {
 			const gl = canvas.current!.getContext("webgl");
 			if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 
-			setMeshes(await loadModel(gl, "xyzrgb_dragon.obj"));
+			setMeshes(await loadModel(gl, "stanford_bunny.obj"));
 			setTexture(loadTexture(gl, "bricks.jpg"));
 
 			const shaderProgram = await initShaderProgram(gl, "vertex.vs", "fragment.fs");
@@ -121,6 +123,8 @@ export function Canvas() {
 			gl.uniform3fv(programInfo.uniformLocations.kd, diffuseColor);
 			gl.uniform3fv(programInfo.uniformLocations.specular, specularColor);
 			gl.uniform1f(programInfo.uniformLocations.ambient, ambientIntensity);
+			gl.uniform1f(programInfo.uniformLocations.indexOfRefraction, indexOfRefraction);
+    		gl.uniform1f(programInfo.uniformLocations.beta, beta);
 
 			drawScene(gl!, programInfo, meshes, texture!);
 		})();
@@ -128,9 +132,9 @@ export function Canvas() {
 		return () => {
 			cancelAnimationFrame(animationFrame.number);
 		};
-	}, [ambientIntensity, animationFrame, canceledFrame, diffuseColor, lightPosition, meshes, position, power, programInfo, rotation, scale, specularColor, texture]);
+	}, [ambientIntensity, animationFrame, beta, canceledFrame, diffuseColor, indexOfRefraction, lightPosition, meshes, position, power, programInfo, rotation, scale, specularColor, texture]);
 
 	return (
-		<canvas ref={canvas} id="gl-canvas" width="640" height="480"></canvas>
+		<canvas ref={canvas} id="gl-canvas" width="800" height="500"></canvas>
 	);
 }

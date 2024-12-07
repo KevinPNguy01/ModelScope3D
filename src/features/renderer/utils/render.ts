@@ -13,17 +13,9 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
     gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 
-    const indexOfRefraction = 0.1;
-    const beta = 1;
-
-    gl.uniform1f(programInfo.uniformLocations.indexOfRefraction, indexOfRefraction);
-    gl.uniform1f(programInfo.uniformLocations.beta, beta);
-
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
-
-    
 
     for (const mesh of meshes) {         
         gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);

@@ -65,7 +65,7 @@ export function TransformNumberInput({value, setValue, title, step, color}: {val
         <Tooltip title={title}>
             <div 
                 style={{"--corner-color": color} as React.CSSProperties}
-                className={`bg-tertiary p-1 flex items-center relative ${color === "none" ? "" : "transformNumberInput"}`}
+                className={`w-fit bg-tertiary p-1 flex items-center relative ${color === "none" ? "" : "transformNumberInput"}`}
                 onMouseEnter={() => setHovering(true)}
                 onMouseLeave={() => setHovering(false)}
             >

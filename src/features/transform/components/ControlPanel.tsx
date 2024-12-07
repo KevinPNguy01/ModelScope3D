@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectAmbientIntensity, selectDiffuseColor, selectLightPosition, selectPower, selectSpecularColor } from "../../../stores/selectors/lighting";
+import { selectAmbientIntensity, selectBeta, selectDiffuseColor, selectIndexOfRefraction, selectLightPosition, selectPower, selectSpecularColor } from "../../../stores/selectors/lighting";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
-import { setAmbientIntensity, setDiffuseColor, setLightPosition, setPower, setSpecularColor } from "../../../stores/slices/lighting";
+import { setAmbientIntensity, setBeta, setDiffuseColor, setIndexOfRefraction, setLightPosition, setPower, setSpecularColor } from "../../../stores/slices/lighting";
 import { setPosition, setRotation, setScale } from "../../../stores/slices/transformations";
 import { TransformNumberInput } from "./NumberInput";
 
@@ -17,8 +17,8 @@ export function ControlPanel() {
     const specularColor = useSelector(selectSpecularColor);
     const power = useSelector(selectPower);
     const ambientIntensity = useSelector(selectAmbientIntensity);
-    //const indexOfRefraction = useSelector(selectIndexOfRefraction);
-    //const beta = useSelector(selectBeta);
+    const indexOfRefraction = useSelector(selectIndexOfRefraction);
+    const beta = useSelector(selectBeta);
 
     const panelRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +80,10 @@ export function ControlPanel() {
                 <TransformNumberInput value={specularColor[2]} setValue={(val: number) => dispatch(setSpecularColor({value: val, index: 2}))} title="Specular Blue Component" step={.01} color="#0080ff"/>
                 <TransformNumberInput value={power} setValue={(val: number) => dispatch(setPower(val))} title="Specular Brightness" step={.1} color="none"/>
             </div>
+            <span>Index of Refraction</span>
+            <TransformNumberInput value={indexOfRefraction} setValue={(val: number) => dispatch(setIndexOfRefraction(val))} title="Index Of Refraction" step={1} color="none"/>
+            <span>Beta</span>
+            <TransformNumberInput value={beta} setValue={(val: number) => dispatch(setBeta(val))} title="Beta" step={.01} color="none"/>
         </div>
     );
 }
