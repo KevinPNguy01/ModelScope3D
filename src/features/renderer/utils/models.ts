@@ -9,6 +9,10 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
     const e2 = vec3.create();
     const norm = vec3.create();
 
+    // Keep track of minimum and maximum dimensions to normalize scale later.
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+
     // Compute the normals for each vertex by aggregating the normals of each associated face.
     mesh.vertexNormals = new Array(mesh.vertices.length).fill(0);
     for (let i = 0; i < mesh.indices.length; i += 3) {
@@ -18,6 +22,14 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
         const v1 = getVertex(mesh.vertices, i1);
         const v2 = getVertex(mesh.vertices, i2);
         const v3 = getVertex(mesh.vertices, i3);
+
+        // Update min and max for each dimension.
+        for (const v of [v1, v2, v3]) {
+            for (let j = 0; j < 3; ++j) {
+                min[j] = Math.min(min[j], v[j]);
+                max[j] = Math.max(min[j], v[j]);
+            }
+        }
 
         vec3.sub(e1, v2, v1);
         vec3.sub(e2, v3, v1);
@@ -31,6 +43,12 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
                 mesh.vertexNormals[idx+j] += norm[j];
             }
         }
+    }
+
+    // Find the largest dimension and use to normalize the magnitude of the vertices.
+    const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+    for (let i = 0; i < mesh.vertices.length; ++i) {
+        mesh.vertices[i] /= size;
     }
 
     // Normalize normals.
