@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ProgramInfo } from "../types";
 import { loadModel } from "../utils/models";
 import { drawScene } from "../utils/render";
@@ -7,6 +7,7 @@ import { loadTexture } from "../utils/textures";
 
 export function Canvas() {
 	const canvas = useRef<HTMLCanvasElement | null>(null);
+	const [animationFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
 
 	useEffect(() => {
 		(async () => {
@@ -55,13 +56,15 @@ export function Canvas() {
 				drawScene(gl!, programInfo, meshes, texture, rotation);
 				rotation += deltaTime;
 
-				requestAnimationFrame(render);
+				animationFrame.number = requestAnimationFrame(render);
 			}
-			requestAnimationFrame(render);
-		})()
-	}, []);
+			animationFrame.number = requestAnimationFrame(render);
+		})();
+
+		return () => cancelAnimationFrame(animationFrame.number);
+	}, [animationFrame]);
 
 	return (
-			<canvas ref={canvas} id="gl-canvas" width="640" height="480"></canvas>
+		<canvas ref={canvas} id="gl-canvas" width="640" height="480"></canvas>
 	);
 }
