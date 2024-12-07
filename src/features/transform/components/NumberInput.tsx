@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 export function TransformNumberInput({value, setValue, title, step, color}: {value: number, setValue: (_: number) => void, title: string, step: number, color: string}) {
     const [isClick, setIsClick] = useState(false);
     const [numberInput, setNumberInput] = useState(false);
-    const [mouseStartPos, setMouseStartPos] = useState(-1);
+    const mousePosRef = useRef(-1);
     const [hovering, setHovering] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -19,11 +19,11 @@ export function TransformNumberInput({value, setValue, title, step, color}: {val
     useEffect(() => {
         // Change the value if the mouse moves 2% of the screen width.
         const handleMouseMove = (e: MouseEvent) => {
-            const dx = e.clientX - mouseStartPos;
-            if (mouseStartPos != -1 && Math.abs(dx) / window.innerWidth > 0.02) {
+            const dx = e.clientX - mousePosRef.current;
+            if (mousePosRef.current != -1 && Math.abs(dx) / window.innerWidth > 0.02) {
                 setIsClick(false);
                 setValue(value + step * dx / Math.abs(dx));
-                setMouseStartPos(e.clientX);
+                mousePosRef.current = e.clientX;
             }
         };
 
@@ -32,7 +32,7 @@ export function TransformNumberInput({value, setValue, title, step, color}: {val
                 setNumberInput(true);
             }
             setIsClick(false);
-            setMouseStartPos(-1);
+            mousePosRef.current = -1;
         };
 
         document.addEventListener('mousemove', handleMouseMove);
@@ -42,7 +42,7 @@ export function TransformNumberInput({value, setValue, title, step, color}: {val
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isClick, mouseStartPos, setValue, step, value]);
+    }, [isClick, setValue, step, value]);
 
     // Highlight the text input on mount.
     useEffect(() => {
@@ -93,7 +93,7 @@ export function TransformNumberInput({value, setValue, title, step, color}: {val
                     <span 
                         className={`cursor-ew-resize select-none w-6 text-center`}
                         onMouseDown={(e) => {
-                            setMouseStartPos(e.clientX);
+                            mousePosRef.current = e.clientX;
                             setIsClick(true);
                         }}
                     >

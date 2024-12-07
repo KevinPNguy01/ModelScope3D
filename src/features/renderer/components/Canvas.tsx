@@ -62,6 +62,9 @@ export function Canvas() {
 					beta: gl.getUniformLocation(shaderProgram, "uBeta")
 				},
 			});
+
+			gl.useProgram(shaderProgram);
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		})();
 	}, []);
 
@@ -95,12 +98,6 @@ export function Canvas() {
 			const normalMatrix = mat4.create();
 			mat4_inverse(modelViewMatrix, normalMatrix);
 			mat4.transpose(normalMatrix, normalMatrix);
-
-			//const buffers = initBuffers(gl);
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-			gl.useProgram(programInfo.program);
-
-			gl!.useProgram(programInfo.program);
 			
 			gl!.uniformMatrix4fv(
 				programInfo.uniformLocations.modelViewMatrix,
