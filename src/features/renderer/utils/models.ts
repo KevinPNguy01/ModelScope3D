@@ -31,11 +31,11 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
             }
         }
     }
-    if (!mesh.textures.length) {
+        mesh.textures = [];
         for (let i = 0; i < mesh.vertices.length / 3 * 2; ++i) {
             mesh.textures.push(-1);
         }
-    }
+    
     return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
 }
 

@@ -4,7 +4,7 @@ export const transformationsSlice = createSlice({
     name: "transformations",
     initialState: {
         position: [0, 0, 0],
-        scale: [0, 0, 0, 1],
+        scale: [1, 1, 1, 1],
         rotation: [0, 0, 0]
     },
     reducers: {
