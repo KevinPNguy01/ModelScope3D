@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
+import lightingReducer from "../stores/slices/lighting";
 import transformationsReducer from "../stores/slices/transformations";
 
 const store =  configureStore({
     reducer: {
-        transformations: transformationsReducer
+        transformations: transformationsReducer,
+        lighting: lightingReducer
     },
 })
 
