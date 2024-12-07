@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TransformNumberInput } from "../../../components/TransformNumberInput";
+import { TransformNumberInput } from "./NumberInput";
 
 export function ControlPanel() {
     const [mouseDown, setMouseDown] = useState(false);
