@@ -4,8 +4,7 @@ import { SvgIconProps } from '@mui/material/SvgIcon/SvgIcon';
 import Tooltip from '@mui/material/Tooltip/Tooltip';
 import { useEffect, useRef, useState } from "react";
 
-export function TransformNumberInput({title, step, color}: {title: string, step: number, color: string}) {
-    const [value, setValue] = useState(0);
+export function TransformNumberInput({value, setValue, title, step, color}: {value: number, setValue: (_: number) => void, title: string, step: number, color: string}) {
     const [isClick, setIsClick] = useState(false);
     const [numberInput, setNumberInput] = useState(false);
     const [mouseStartPos, setMouseStartPos] = useState(-1);
@@ -43,7 +42,7 @@ export function TransformNumberInput({title, step, color}: {title: string, step:
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isClick, mouseStartPos, step, value]);
+    }, [isClick, mouseStartPos, setValue, step, value]);
 
     // Highlight the text input on mount.
     useEffect(() => {

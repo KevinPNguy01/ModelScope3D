@@ -8,14 +8,17 @@ export const transformationsSlice = createSlice({
         rotation: [0, 0, 0]
     },
     reducers: {
-        setPosition: (state, action: PayloadAction<number[]>) => {
-            state.position = action.payload;
+        setPosition: (state, action: PayloadAction<{value: number, index: number}>) => {
+            const {value, index} = action.payload;
+            state.position[index] = value;
         },
-        setScale: (state, action: PayloadAction<number[]>) => {
-            state.scale = action.payload;
+        setScale: (state, action: PayloadAction<{value: number, index: number}>) => {
+            const {value, index} = action.payload;
+            state.scale[index] = value;
         },
-        setRotation: (state, action: PayloadAction<number[]>) => {
-            state.rotation = action.payload;
+        setRotation: (state, action: PayloadAction<{value: number, index: number}>) => {
+            const {value, index} = action.payload;
+            state.rotation[index] = value;
         }
     }
 });
