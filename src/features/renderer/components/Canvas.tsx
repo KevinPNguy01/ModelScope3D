@@ -1,4 +1,4 @@
-import { mat4, vec3 } from "gl-matrix";
+import { mat4, vec3, vec4 } from "gl-matrix";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
@@ -91,7 +91,6 @@ export function Canvas() {
 
 		if (programInfo === undefined) return;
 
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.direction"), dirLight.direction);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.ambient"), dirLight.ambient);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.diffuse"), dirLight.diffuse);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.specular"), dirLight.specular);
@@ -106,14 +105,13 @@ export function Canvas() {
 
 		if (programInfo === undefined) return;
 
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.position"), pointLight.position);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.ambient"), pointLight.ambient);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.diffuse"), pointLight.diffuse);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.specular"), pointLight.specular);
 
 		drawScene(gl!, programInfo, meshes, texture!);
 		
-	}, [pointLight.ambient, pointLight.diffuse, pointLight.position, pointLight.specular, meshes, programInfo, texture]);
+	}, [pointLight.ambient, pointLight.diffuse, pointLight.specular, meshes, programInfo, texture]);
 
 	useEffect(() => {
 		(async () => {
@@ -129,22 +127,37 @@ export function Canvas() {
 			const zFar = 1000;
 			const projectionMatrix = mat4.create();
 			mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
-
-			const modelViewMatrix = mat4.create();
+			
+			const modelMatrix = mat4.create();
 			const positionVec = vec3.fromValues(position[0], position[1], position[2]);
 			const scaleVec = vec3.fromValues(scale[0], scale[1], scale[2]);
 			const rotationVec = vec3.fromValues(rotation[0], rotation[1], rotation[2]);
 			vec3.scale(rotationVec, rotationVec, Math.PI/180);
 			vec3.scale(scaleVec, scaleVec, scale[3]);
-			mat4.translate(modelViewMatrix, modelViewMatrix, positionVec);
-			mat4.rotate(modelViewMatrix, modelViewMatrix, rotationVec[1], [0, 1, 0]);
-			mat4.rotate(modelViewMatrix, modelViewMatrix, rotationVec[0], [1, 0, 0]);
-			mat4.rotate(modelViewMatrix, modelViewMatrix, rotationVec[2], [0, 0, 1]);
-			mat4.scale(modelViewMatrix, modelViewMatrix, scaleVec);
+			mat4.translate(modelMatrix, modelMatrix, positionVec);
+			mat4.rotate(modelMatrix, modelMatrix, rotationVec[1], [0, 1, 0]);
+			mat4.rotate(modelMatrix, modelMatrix, rotationVec[0], [1, 0, 0]);
+			mat4.rotate(modelMatrix, modelMatrix, rotationVec[2], [0, 0, 1]);
+			mat4.scale(modelMatrix, modelMatrix, scaleVec);
+
+			const viewMatrix = mat4.create();
+			mat4.lookAt(viewMatrix, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+
+			const modelViewMatrix = mat4.create();
+			mat4.mul(modelViewMatrix, viewMatrix, modelMatrix);
 
 			const normalMatrix = mat4.create();
 			mat4_inverse(modelViewMatrix, normalMatrix);
 			mat4.transpose(normalMatrix, normalMatrix);
+
+			const dirLightTransformed =  vec4.fromValues(dirLight.direction[0], dirLight.direction[1], dirLight.direction[2], 1);
+			vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrix);
+			gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.direction"), dirLightTransformed.slice(0, 3));
+
+			const pointLightTransformed =  vec4.fromValues(pointLight.position[0], pointLight.position[1], pointLight.position[2], 1);
+			vec4.transformMat4(pointLightTransformed, pointLightTransformed, viewMatrix);
+			gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.position"), pointLightTransformed.slice(0, 3));
+
 			
 			gl!.uniformMatrix4fv(
 				programInfo.uniformLocations.modelViewMatrix,
@@ -168,7 +181,7 @@ export function Canvas() {
 		return () => {
 			cancelAnimationFrame(animationFrame.number);
 		};
-	}, [animationFrame, canceledFrame, meshes, position, programInfo, rotation, scale, texture]);
+	}, [animationFrame, canceledFrame, dirLight.direction, meshes, pointLight.position, position, programInfo, rotation, scale, texture]);
 
 	return (
 		<canvas ref={canvas} id="gl-canvas" width="800" height="500"></canvas>
