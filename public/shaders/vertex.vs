@@ -8,7 +8,7 @@ attribute vec2 aTextureCoord;
 
 varying vec3 vPosition;             // Vertex position (camera space)
 varying vec3 vNormal;               // Vertex normal (camera space)
-varying highp vec2 vTextureCoord;
+varying vec2 vTextureCoord;
 
 void main(void) {
     vec4 camSpacePosition = uModelViewMatrix * vec4(aVertexPosition, 1.0);

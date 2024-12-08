@@ -1,4 +1,4 @@
-type ProgramInfo = {
+export type ProgramInfo = {
     program: WebGLProgram,
     attribLocations: {
 		vertexPosition: GLint,
@@ -18,17 +18,10 @@ type ProgramInfo = {
 		specular: WebGLUniformLocation | null,
 		ambient: WebGLUniformLocation | null,
 		indexOfRefraction: WebGLUniformLocation | null,
-		beta: WebGLUniformLocation | null
+		beta: WebGLUniformLocation | null,
+
+		pointLight: WebGLUniformLocation | null,
+		material: WebGLUniformLocation | null,
+		dirLight: WebGLUniformLocation | null
     },
 };
-
-type Buffers = {
-    position: WebGLBuffer | null,
-    normal: WebGLBuffer | null,
-    color: WebGLBuffer | null,
-    indices: WebGLBuffer | null,
-    textureCoord: WebGLBuffer | null
-}
-
-export type { Buffers, ProgramInfo };
-

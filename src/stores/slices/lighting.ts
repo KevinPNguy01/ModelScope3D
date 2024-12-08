@@ -3,41 +3,55 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 export const lightingSlice = createSlice({
     name: "lighting",
     initialState: {
-        position: [0, 0, 0],
-        diffuseColor: [1, 1, 1],
-        specularColor: [1, 1, 1],
-        power: 5,
-        ambientIntensity: 0.1,
-        indexOfRefraction: 0.1,
-        beta: 0.5
+        material: {
+            ambient: [0, 0, 0],
+            diffuse: [0, 0.5, 1],
+            specular: [1, 1, 1],
+            shininess: 32.0
+        },
+        dirLight: {
+            direction: [1, -1, -1],
+            ambient: [0.05, 0.05, 0.05],
+            diffuse: [0.9, 0.9, 0.9],
+            specular: [0.5, 0.5, 0.5]
+        },
+        pointLight: {
+            position: [1.2, 1.0, 2.0],
+            constant: 1.0,
+            linear: 0.7,
+            quadratic: 1.8,
+            ambient: [0.2, 0.2, 0.2],
+            diffuse: [0.5, 0.5, 0.5],
+            specular: [1.0, 1.0, 1.0]
+        }
     },
     reducers: {
-        setLightPosition: (state, action: PayloadAction<{value: number, index: number}>) => {
-            const {value, index} = action.payload;
-            state.position[index] = value;
-        },
-        setDiffuseColor: (state, action: PayloadAction<{value: number, index: number}>) => {
-            const {value, index} = action.payload;
-            state.diffuseColor[index] = value;
-        },
-        setSpecularColor: (state, action: PayloadAction<{value: number, index: number}>) => {
-            const {value, index} = action.payload;
-            state.specularColor[index] = value;
-        },
-        setPower: (state, action: PayloadAction<number>) => {
-            state.power = action.payload;
-        },
-        setAmbientIntensity: (state, action: PayloadAction<number>) => {
-            state.ambientIntensity = action.payload;
-        },
-        setIndexOfRefraction: (state, action: PayloadAction<number>) => {
-            state.indexOfRefraction = action.payload;
-        },
-        setBeta: (state, action: PayloadAction<number>) => {
-            state.beta = action.payload;
+        updateStructUniform: (state, action: PayloadAction<{ parentKey: "material" | "dirLight" | "pointLight", key: keyof typeof state.material | keyof typeof state.dirLight | keyof typeof state.pointLight, index: number, value: number }>) => {
+            const { parentKey, key, index, value } = action.payload;
+            if (parentKey === "material") {
+                const k = key as keyof typeof state.material;
+                if (Array.isArray(state.material[k])) {
+                    state.material[k][index] = value;
+                } else {
+                    state.material[k as "shininess"] = value;
+                }
+            } else if (parentKey === "dirLight") {
+                const k = key as keyof typeof state.dirLight;
+                state.dirLight[k][index] = value;
+            } else {
+                const k = key as keyof typeof state.pointLight;
+                if (Array.isArray(state.pointLight[k])) {
+                    state.pointLight[k][index] = value;
+                } else {
+                    state.pointLight[k as "constant" | "linear" | "quadratic"] = value;
+                }
+            }
         }
     }
 });
 
-export const {setLightPosition, setDiffuseColor, setSpecularColor, setPower, setAmbientIntensity, setIndexOfRefraction, setBeta} = lightingSlice.actions;
+export const {
+    updateStructUniform,
+} = lightingSlice.actions;
+
 export default lightingSlice.reducer;

@@ -2,7 +2,7 @@ import { mat4, vec3 } from "gl-matrix";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
-import { selectAmbientIntensity, selectBeta, selectDiffuseColor, selectIndexOfRefraction, selectLightPosition, selectPower, selectSpecularColor } from "../../../stores/selectors/lighting";
+import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ProgramInfo } from "../types";
 import { mat4_inverse } from "../utils/mat4";
@@ -10,6 +10,7 @@ import { loadModel } from "../utils/models";
 import { drawScene } from "../utils/render";
 import { initShaderProgram } from "../utils/shaders";
 import { loadTexture } from "../utils/textures";
+import { setUniforms } from "../utils/uniforms";
 
 export function Canvas() {
 	const canvas = useRef<HTMLCanvasElement | null>(null);
@@ -22,23 +23,19 @@ export function Canvas() {
     const scale = useSelector(selectScale);
     const rotation = useSelector(selectRotation);
 
-	const lightPosition = useSelector(selectLightPosition);
-    const diffuseColor = useSelector(selectDiffuseColor);
-    const specularColor = useSelector(selectSpecularColor);
-    const power = useSelector(selectPower);
-    const ambientIntensity = useSelector(selectAmbientIntensity);
-	const indexOfRefraction = useSelector(selectIndexOfRefraction);
-	const beta = useSelector(selectBeta);
+	const material = useSelector(selectMaterial);
+	const dirLight = useSelector(selectDirLight);
+	const pointLight = useSelector(selectPointLight);
 
 	useEffect(() => {
 		(async () => {
 			const gl = canvas.current!.getContext("webgl");
 			if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 
-			setMeshes(await loadModel(gl, "car.obj"));
+			setMeshes(await loadModel(gl, "cat.obj"));
 			setTexture(loadTexture(gl, "bricks.jpg"));
 
-			const shaderProgram = await initShaderProgram(gl, "vertex.vs", "fragment.fs");
+			const shaderProgram = await initShaderProgram(gl, "vertex.vs", "newFragment.fs");
 			setProgramInfo({
 				program: shaderProgram,
 				attribLocations: {
@@ -59,14 +56,64 @@ export function Canvas() {
 					specular: gl.getUniformLocation(shaderProgram, "uSpecularColor"),
 					ambient: gl.getUniformLocation(shaderProgram, "uAmbient"),
 					indexOfRefraction: gl.getUniformLocation(shaderProgram, "uIOR"),
-					beta: gl.getUniformLocation(shaderProgram, "uBeta")
+					beta: gl.getUniformLocation(shaderProgram, "uBeta"),
+
+					pointLight: gl.getUniformLocation(shaderProgram, "pointLight"),
+					material: gl.getUniformLocation(shaderProgram, "material"),
+					dirLight: gl.getUniformLocation(shaderProgram, "dirLight"),
 				},
 			});
 
 			gl.useProgram(shaderProgram);
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			setUniforms(gl, shaderProgram);
+
 		})();
 	}, []);
+
+	useEffect(() => {
+		const gl = canvas.current!.getContext("webgl");
+		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
+
+		if (programInfo === undefined) return;
+
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.ambient"), material.ambient);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.diffuse"), material.diffuse);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.specular"), material.specular);
+
+		drawScene(gl!, programInfo, meshes, texture!);
+		
+	}, [material.ambient, material.diffuse, material.specular, meshes, programInfo, texture]);
+
+	useEffect(() => {
+		const gl = canvas.current!.getContext("webgl");
+		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
+
+		if (programInfo === undefined) return;
+
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.direction"), dirLight.direction);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.ambient"), dirLight.ambient);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.diffuse"), dirLight.diffuse);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.specular"), dirLight.specular);
+
+		drawScene(gl!, programInfo, meshes, texture!);
+		
+	}, [dirLight.ambient, dirLight.diffuse, dirLight.direction, dirLight.specular, meshes, programInfo, texture]);
+
+	useEffect(() => {
+		const gl = canvas.current!.getContext("webgl");
+		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
+
+		if (programInfo === undefined) return;
+
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.position"), pointLight.position);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.ambient"), pointLight.ambient);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.diffuse"), pointLight.diffuse);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.specular"), pointLight.specular);
+
+		drawScene(gl!, programInfo, meshes, texture!);
+		
+	}, [pointLight.ambient, pointLight.diffuse, pointLight.position, pointLight.specular, meshes, programInfo, texture]);
 
 	useEffect(() => {
 		(async () => {
@@ -115,21 +162,13 @@ export function Canvas() {
 				normalMatrix
 			);
 
-			gl.uniform3fv(programInfo.uniformLocations.lightPos, lightPosition);
-			gl.uniform1f(programInfo.uniformLocations.lightPower, power);
-			gl.uniform3fv(programInfo.uniformLocations.kd, diffuseColor);
-			gl.uniform3fv(programInfo.uniformLocations.specular, specularColor);
-			gl.uniform1f(programInfo.uniformLocations.ambient, ambientIntensity);
-			gl.uniform1f(programInfo.uniformLocations.indexOfRefraction, indexOfRefraction);
-    		gl.uniform1f(programInfo.uniformLocations.beta, beta);
-
 			drawScene(gl!, programInfo, meshes, texture!);
 		})();
 
 		return () => {
 			cancelAnimationFrame(animationFrame.number);
 		};
-	}, [ambientIntensity, animationFrame, beta, canceledFrame, diffuseColor, indexOfRefraction, lightPosition, meshes, position, power, programInfo, rotation, scale, specularColor, texture]);
+	}, [animationFrame, canceledFrame, meshes, position, programInfo, rotation, scale, texture]);
 
 	return (
 		<canvas ref={canvas} id="gl-canvas" width="800" height="500"></canvas>
