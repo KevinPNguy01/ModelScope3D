@@ -32,7 +32,7 @@ export function Canvas() {
 			const gl = canvas.current!.getContext("webgl");
 			if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 
-			setMeshes(await loadModel(gl, "cat.obj"));
+			setMeshes(await loadModel(gl, "city.obj"));
 			setTexture(loadTexture(gl, "bricks.jpg"));
 
 			const shaderProgram = await initShaderProgram(gl, "vertex.vs", "newFragment.fs");
@@ -91,13 +91,11 @@ export function Canvas() {
 
 		if (programInfo === undefined) return;
 
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.ambient"), dirLight.ambient);
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.diffuse"), dirLight.diffuse);
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.specular"), dirLight.specular);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.color"), dirLight.color);
 
 		drawScene(gl!, programInfo, meshes, texture!);
 		
-	}, [dirLight.ambient, dirLight.diffuse, dirLight.direction, dirLight.specular, meshes, programInfo, texture]);
+	}, [dirLight.color, meshes, programInfo, texture]);
 
 	useEffect(() => {
 		const gl = canvas.current!.getContext("webgl");
@@ -105,13 +103,11 @@ export function Canvas() {
 
 		if (programInfo === undefined) return;
 
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.ambient"), pointLight.ambient);
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.diffuse"), pointLight.diffuse);
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.specular"), pointLight.specular);
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.color"), pointLight.color);
 
 		drawScene(gl!, programInfo, meshes, texture!);
 		
-	}, [pointLight.ambient, pointLight.diffuse, pointLight.specular, meshes, programInfo, texture]);
+	}, [pointLight.color, meshes, programInfo, texture]);
 
 	useEffect(() => {
 		(async () => {

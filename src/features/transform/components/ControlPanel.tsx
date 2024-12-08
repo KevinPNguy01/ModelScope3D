@@ -81,23 +81,11 @@ export function ControlPanel() {
                 <TransformNumberInput value={dirLight.direction[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "direction", index: 1, value: val}))} title="Sunlight Direction Y" step={0.01} color="#00cc00"/>
                 <TransformNumberInput value={dirLight.direction[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "direction", index: 2, value: val}))} title="Sunlight Direction Z" step={0.01} color="#0080ff"/>
             </div>
-            <span>Sunlight Ambient</span>
+            <span>Sunlight Color</span>
             <div className={`flex gap-1`}>
-                <TransformNumberInput value={dirLight.ambient[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "ambient", index: 0, value: val}))} title="Sunlight Ambient Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={dirLight.ambient[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "ambient", index: 1, value: val}))} title="Sunlight Ambient Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={dirLight.ambient[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "ambient", index: 2, value: val}))} title="Sunlight Ambient Blue Component" step={0.01} color="#0080ff"/>
-            </div>
-            <span>Sunlight Diffuse</span>
-            <div className={`flex gap-1`}>
-                <TransformNumberInput value={dirLight.diffuse[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "diffuse", index: 0, value: val}))} title="Sunlight Diffuse Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={dirLight.diffuse[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "diffuse", index: 1, value: val}))} title="Sunlight Diffuse Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={dirLight.diffuse[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "diffuse", index: 2, value: val}))} title="Sunlight Diffuse Blue Component" step={0.01} color="#0080ff"/>
-            </div>
-            <span>Sunlight Specular</span>
-            <div className={`flex gap-1`}>
-                <TransformNumberInput value={dirLight.specular[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "specular", index: 0, value: val}))} title="Sunlight Specular Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={dirLight.specular[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "specular", index: 1, value: val}))} title="Sunlight Specular Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={dirLight.specular[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "specular", index: 2, value: val}))} title="Sunlight Specular Blue Component" step={0.01} color="#0080ff"/>
+                <TransformNumberInput value={dirLight.color[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "color", index: 0, value: val}))} title="Sunlight Red Component" step={0.01} color="#ff0000"/>
+                <TransformNumberInput value={dirLight.color[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "color", index: 1, value: val}))} title="Sunlight Green Component" step={0.01} color="#00cc00"/>
+                <TransformNumberInput value={dirLight.color[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "dirLight", key: "color", index: 2, value: val}))} title="Sunlight Blue Component" step={0.01} color="#0080ff"/>
             </div>
             <br/>
             <span>Point Light Position</span>
@@ -106,23 +94,11 @@ export function ControlPanel() {
                 <TransformNumberInput value={pointLight.position[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "position", index: 1, value: val}))} title="Point Light Position Y" step={0.1} color="#00cc00"/>
                 <TransformNumberInput value={pointLight.position[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "position", index: 2, value: val}))} title="Point Light Position Z" step={0.1} color="#0080ff"/>
             </div>
-            <span>Point Light Ambient</span>
+            <span>Point Light Color</span>
             <div className={`flex gap-1`}>
-                <TransformNumberInput value={pointLight.ambient[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "ambient", index: 0, value: val}))} title="Point Light Ambient Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={pointLight.ambient[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "ambient", index: 1, value: val}))} title="Point Light Ambient Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={pointLight.ambient[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "ambient", index: 2, value: val}))} title="Point Light Ambient Blue Component" step={0.01} color="#0080ff"/>
-            </div>
-            <span>Point Light Diffuse</span>
-            <div className={`flex gap-1`}>
-                <TransformNumberInput value={pointLight.diffuse[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "diffuse", index: 0, value: val}))} title="Point Light Diffuse Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={pointLight.diffuse[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "diffuse", index: 1, value: val}))} title="Point Light Diffuse Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={pointLight.diffuse[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "diffuse", index: 2, value: val}))} title="Point Light Diffuse Blue Component" step={0.01} color="#0080ff"/>
-            </div>
-            <span>Point Light Specular</span>
-            <div className={`flex gap-1`}>
-                <TransformNumberInput value={pointLight.specular[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "specular", index: 0, value: val}))} title="Point Light Specular Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={pointLight.specular[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "specular", index: 1, value: val}))} title="Point Light Specular Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={pointLight.specular[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "specular", index: 2, value: val}))} title="Point Light Specular Blue Component" step={0.01} color="#0080ff"/>
+                <TransformNumberInput value={pointLight.color[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "color", index: 0, value: val}))} title="Point Light Red Component" step={0.01} color="#ff0000"/>
+                <TransformNumberInput value={pointLight.color[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "color", index: 1, value: val}))} title="Point Light Green Component" step={0.01} color="#00cc00"/>
+                <TransformNumberInput value={pointLight.color[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "pointLight", key: "color", index: 2, value: val}))} title="Point Light Blue Component" step={0.01} color="#0080ff"/>
             </div>
         </div>
     );
