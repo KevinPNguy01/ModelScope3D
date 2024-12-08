@@ -1,9 +1,13 @@
 import { vec3 } from "gl-matrix";
 import { initMeshBuffers, Mesh } from "webgl-obj-loader";
+import Mtl, { initMtlTextures } from "./mtl";
 
 export async function loadModel(gl: WebGLRenderingContext, path: string) {
     const modelString = await loadModelFile(path);
+    const mtlString = await loadMtlFile(path);
+
     const mesh = new Mesh(modelString);
+    const mtl = new Mtl(mtlString);
     
     const e1 = vec3.create();
     const e2 = vec3.create();
@@ -14,7 +18,8 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
     const max = [-Infinity, -Infinity, -Infinity];
 
     // Compute the normals for each vertex by aggregating the normals of each associated face.
-    mesh.vertexNormals = new Array(mesh.vertices.length).fill(0);
+    const noNormals = !mesh.vertexNormals.length || isNaN(mesh.vertexNormals[0]);
+    if (noNormals) mesh.vertexNormals = new Array(mesh.vertices.length).fill(0);
     for (const indices of mesh.indicesPerMaterial) {
         for (let i = 0; i < indices.length; i += 3) {
             const i1 = (indices[i]) * 3;
@@ -28,20 +33,21 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
             for (const v of [v1, v2, v3]) {
                 for (let j = 0; j < 3; ++j) {
                     min[j] = Math.min(min[j], v[j]);
-                    max[j] = Math.max(min[j], v[j]);
+                    max[j] = Math.max(max[j], v[j]);
                 }
             }
     
             vec3.sub(e1, v2, v1);
             vec3.sub(e2, v3, v1);
-    
+      
             vec3.cross(norm, e1, e2);
             vec3.normalize(norm, norm);
     
             const idxs = [i1, i2, i3];
             for (const idx of idxs) {
                 for (let j = 0; j < 3; ++j) {
-                    mesh.vertexNormals[idx+j] += norm[j];
+                    if (noNormals)
+                        mesh.vertexNormals[idx+j] += norm[j];
                 }
             }
         }
@@ -66,19 +72,23 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
         }
     }
 
-    mesh.textures = [];
-    for (let i = 0; i < mesh.vertices.length / 3 * 2; ++i) {
-        mesh.textures.push(-1);
-    }    
-    return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
+    if (!mesh.textures.length || isNaN(mesh.textures[0])) {
+        mesh.textures = [];
+        for (let i = 0; i < mesh.vertices.length / 3 * 2; ++i) {
+            mesh.textures.push(-1);
+        }  
+    }
+    return {meshes: splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh)), mtl: initMtlTextures(gl, mtl)};
 }
 
 function splitMesh(mesh: Mesh) {
     const meshes = [];
-    for (const indices of mesh.indicesPerMaterial) {
+    for (let materialIndex = 0; materialIndex < mesh.indicesPerMaterial.length; ++materialIndex) {
+        const indices = mesh.indicesPerMaterial[materialIndex]
         for (let offset = 0; offset < indices.length; offset += 65535) {
             const indexMap = new Map<number, number>();
             const partialMesh = new Mesh("");
+            partialMesh.materialNames = [mesh.materialNames[materialIndex]];
             for (let i = 0; i < 65535 && offset + i < indices.length; ++i) {
                 const idx = indices[offset+i];
                 if (!indexMap.has(idx)) {
@@ -115,3 +125,18 @@ const loadModelFile = async (path: string): Promise<string> => {
         throw error;
     }
 };
+
+const loadMtlFile = async (path: string): Promise<string> => {
+    if (!path.endsWith(".obj")) return "";
+    try {
+        const response = await fetch("./models/" + path.slice(0, path.length - 4) + ".mtl");
+        if (response.headers.get("content-type") !== "model/mtl") return "";
+        if (!response.ok) {
+            throw new Error(`Failed to load mtl file: ${path.slice(0, path.length - 4) + ".mtl"}`);
+        }
+        return await response.text();
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}

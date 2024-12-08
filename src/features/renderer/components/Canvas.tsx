@@ -7,9 +7,9 @@ import { selectPosition, selectRotation, selectScale } from "../../../stores/sel
 import { ProgramInfo } from "../types";
 import { mat4_inverse } from "../utils/mat4";
 import { loadModel } from "../utils/models";
+import { MtlWithTextures } from "../utils/mtl";
 import { drawScene } from "../utils/render";
 import { initShaderProgram } from "../utils/shaders";
-import { loadTexture } from "../utils/textures";
 import { setUniforms } from "../utils/uniforms";
 
 export function Canvas() {
@@ -17,7 +17,7 @@ export function Canvas() {
 	const [animationFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
 	const [canceledFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
 	const [meshes, setMeshes] = useState<MeshWithBuffers[]>([]);
-	const [texture, setTexture] = useState<WebGLTexture>();
+	const [mtl, setMtl] = useState<MtlWithTextures>();
 	const [programInfo, setProgramInfo] = useState<ProgramInfo>();
 	const position = useSelector(selectPosition);
     const scale = useSelector(selectScale);
@@ -31,9 +31,12 @@ export function Canvas() {
 		(async () => {
 			const gl = canvas.current!.getContext("webgl");
 			if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			
 
-			setMeshes(await loadModel(gl, "cat.obj"));
-			setTexture(loadTexture(gl, "bricks.jpg"));
+			const {meshes, mtl} = await loadModel(gl, "cube.obj")
+			setMeshes(meshes);
+			setMtl(mtl);
 
 			const shaderProgram = await initShaderProgram(gl, "vertex.vs", "newFragment.fs");
 			setProgramInfo({
@@ -65,7 +68,6 @@ export function Canvas() {
 			});
 
 			gl.useProgram(shaderProgram);
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 			setUniforms(gl, shaderProgram);
 
 		})();
@@ -77,13 +79,18 @@ export function Canvas() {
 
 		if (programInfo === undefined) return;
 
+		if (mtl) {
+			gl.bindTexture(gl.TEXTURE_2D, mtl.defaultTexture);
+        	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([Math.floor(255 * material.diffuse[0]), Math.floor(255 * material.diffuse[1]), Math.floor(255 * material.diffuse[2]), 255]));
+		}
+
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.ambient"), material.ambient);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.diffuse"), material.diffuse);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.specular"), material.specular);
 
-		drawScene(gl!, programInfo, meshes, texture!);
+		drawScene(gl!, programInfo, meshes, mtl!);
 		
-	}, [material.ambient, material.diffuse, material.specular, meshes, programInfo, texture]);
+	}, [material.ambient, material.diffuse, material.specular, meshes, mtl, programInfo]);
 
 	useEffect(() => {
 		const gl = canvas.current!.getContext("webgl");
@@ -93,9 +100,9 @@ export function Canvas() {
 
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.color"), dirLight.color);
 
-		drawScene(gl!, programInfo, meshes, texture!);
+		drawScene(gl!, programInfo, meshes, mtl!);
 		
-	}, [dirLight.color, meshes, programInfo, texture]);
+	}, [dirLight.color, meshes, mtl, programInfo]);
 
 	useEffect(() => {
 		const gl = canvas.current!.getContext("webgl");
@@ -105,9 +112,9 @@ export function Canvas() {
 
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.color"), pointLight.color);
 
-		drawScene(gl!, programInfo, meshes, texture!);
+		drawScene(gl!, programInfo, meshes, mtl!);
 		
-	}, [pointLight.color, meshes, programInfo, texture]);
+	}, [pointLight.color, meshes, programInfo, mtl]);
 
 	useEffect(() => {
 		(async () => {
@@ -171,13 +178,13 @@ export function Canvas() {
 				normalMatrix
 			);
 
-			drawScene(gl!, programInfo, meshes, texture!);
+			drawScene(gl!, programInfo, meshes, mtl!);
 		})();
 
 		return () => {
 			cancelAnimationFrame(animationFrame.number);
 		};
-	}, [animationFrame, canceledFrame, dirLight.direction, meshes, pointLight.position, position, programInfo, rotation, scale, texture]);
+	}, [animationFrame, canceledFrame, dirLight.direction, meshes, mtl, pointLight.position, position, programInfo, rotation, scale]);
 
 	return (
 		<canvas ref={canvas} id="gl-canvas" width="800" height="500"></canvas>

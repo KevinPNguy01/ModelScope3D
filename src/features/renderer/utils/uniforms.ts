@@ -21,7 +21,7 @@ export function setUniforms(gl: WebGLRenderingContext, program: WebGLProgram) {
     const pointLightSpecularLoc = gl.getUniformLocation(program, "pointLight.specular");
 
     // Material
-    gl.uniform3fv(materialAmbientLoc, [0.2, 0.1, 0.0]);  // Example values
+    gl.uniform3fv(materialAmbientLoc, [0.2, 0.1, 0.0]);
     gl.uniform3fv(materialDiffuseLoc, [0.8, 0.4, 0.1]);
     gl.uniform3fv(materialSpecularLoc, [1.0, 0.9, 0.8]);
     gl.uniform1f(materialShininessLoc, 32.0);
