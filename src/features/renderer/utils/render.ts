@@ -19,7 +19,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
         const texture = mtl.textures.get(mesh.materialNames[0]) || mtl.defaultTexture;
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
-           
+        
         gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
         gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
 

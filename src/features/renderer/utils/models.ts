@@ -1,13 +1,10 @@
 import { vec3 } from "gl-matrix";
 import { initMeshBuffers, Mesh } from "webgl-obj-loader";
-import Mtl, { initMtlTextures } from "./mtl";
 
-export async function loadModel(gl: WebGLRenderingContext, path: string) {
-    const modelString = await loadModelFile(path);
-    const mtlString = await loadMtlFile(path);
+export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
+    const modelString = await file.text();
 
     const mesh = new Mesh(modelString);
-    const mtl = new Mtl(mtlString);
     
     const e1 = vec3.create();
     const e2 = vec3.create();
@@ -78,7 +75,7 @@ export async function loadModel(gl: WebGLRenderingContext, path: string) {
             mesh.textures.push(-1);
         }  
     }
-    return {meshes: splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh)), mtl: initMtlTextures(gl, mtl)};
+    return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
 }
 
 function splitMesh(mesh: Mesh) {
@@ -111,32 +108,4 @@ function splitMesh(mesh: Mesh) {
 
 function getVertex(vertices: number[], index: number) {
     return vec3.fromValues(vertices[index], vertices[index + 1], vertices[index + 2]);
-}
-
-const loadModelFile = async (path: string): Promise<string> => {
-    try {
-        const response = await fetch("./models/" + path);
-        if (!response.ok) {
-            throw new Error(`Failed to load model file: ${path}`);
-        }
-        return await response.text();
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
-};
-
-const loadMtlFile = async (path: string): Promise<string> => {
-    if (!path.endsWith(".obj")) return "";
-    try {
-        const response = await fetch("./models/" + path.slice(0, path.length - 4) + ".mtl");
-        if (response.headers.get("content-type") !== "model/mtl") return "";
-        if (!response.ok) {
-            throw new Error(`Failed to load mtl file: ${path.slice(0, path.length - 4) + ".mtl"}`);
-        }
-        return await response.text();
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
 }

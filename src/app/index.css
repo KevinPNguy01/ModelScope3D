@@ -68,6 +68,9 @@
         margin: 0;
         outline: none !important;
     }
+    input[type="file"] {
+        display: none;
+    }
 }
   
 .transformNumberInput::before {

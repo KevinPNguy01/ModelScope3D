@@ -13,6 +13,12 @@ export type MtlWithTextures = Mtl & {
     defaultTexture: WebGLTexture
 }
 
+export async function loadMtlFile(gl: WebGLRenderingContext, file: File) {
+    const mtlString = await file.text();
+    const mtl = new Mtl(mtlString);
+    const mtlWithTextures = initMtlTextures(gl, mtl);
+    return mtlWithTextures;
+}
 
 export default class Mtl {
     materials: Map<string, Material>;
