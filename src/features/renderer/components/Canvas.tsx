@@ -1,4 +1,4 @@
-import { mat4, vec3, vec4 } from "gl-matrix";
+import { mat4, vec4 } from "gl-matrix";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
@@ -6,15 +6,15 @@ import { FileContext } from "../../../app/contexts/FileContext";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ProgramInfo } from "../types";
-import { mat4_inverse } from "../utils/mat4";
 import { loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
 import { drawScene } from "../utils/render";
 import { initShaderProgram } from "../utils/shaders";
+import { calculateModelMatrix, calculateNormalMatrix, calculateProjectionMatrix, calculateViewMatrix } from "../utils/transform_matrices";
 import { setUniforms } from "../utils/uniforms";
 
 export function Canvas() {
-	const canvas = useRef<HTMLCanvasElement | null>(null);
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const [animationFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
 	const position = useSelector(selectPosition);
     const scale = useSelector(selectScale);
@@ -28,17 +28,34 @@ export function Canvas() {
 	const glRef = useRef<WebGLRenderingContext>();
 	const meshesRef = useRef<MeshWithBuffers[]>([]);
 	const mtlRef = useRef<MtlWithTextures>();
+	const defaultTextureRef = useRef<WebGLTexture | null>(null);
 	const programsRef = useRef<ProgramInfo>({} as ProgramInfo);
+
+	// State hooks for keeping track of camera rotation
+	const [yaw, setYaw] = useState(0);
+	const [deltaYaw, setDeltaYaw] = useState(0);
+	const [pitch, setPitch] = useState(0);
+	const [deltaPitch, setDeltaPitch] = useState(0);
+
+	// Transformation matrices
+	const projectionMatrixRef = useRef(mat4.create());
+	const modelMatrixRef = useRef(mat4.create());
+	const viewMatrixRef = useRef(mat4.create());
+	const modelViewMatrixRef = useRef(mat4.create());
+	const normalMatrixRef = useRef(mat4.create());
 
 	useEffect(() => {
 		// Initialize WebGLRenderingContext
-		const gl = canvas.current!.getContext("webgl");
+		const canvas = canvasRef.current!;
+		const gl = canvas.getContext("webgl");
 		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 		glRef.current = gl;
-		
-		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 		mtlRef.current = initMtlTextures(gl, new Mtl(""));
+		defaultTextureRef.current = gl.createTexture();
+
+		// Initialize projection matrix
+		calculateProjectionMatrix(projectionMatrixRef.current, canvas, 90, 0.1, 1000);
 
 		const shaderProgram = initShaderProgram(gl, "triangles-vertex-shader", "triangles-fragment-shader");
 		programsRef.current = {
@@ -69,10 +86,12 @@ export function Canvas() {
 			},
 		};
 
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		gl.useProgram(shaderProgram);
 		setUniforms(gl, shaderProgram);
 	}, [])
 
+	// Update meshes/mtl when imported files change
 	useEffect(() => {(async () => {if (stlFile) meshesRef.current = await loadSTLModel(glRef.current!, stlFile)})()}, [stlFile]);
 	useEffect(() => {(async () => {if (objFile) meshesRef.current = await loadOBJModel(glRef.current!, objFile)})()}, [objFile]);
 	useEffect(() => {(async () => {if (mtlFile) mtlRef.current = await loadMtlFile(glRef.current!, mtlFile)})()}, [mtlFile]);
@@ -80,7 +99,7 @@ export function Canvas() {
 	// Start the render loop
 	useEffect(() => {
 		function render() {
-			drawScene(glRef.current!, programsRef.current, meshesRef.current, mtlRef.current!);
+			drawScene(glRef.current!, programsRef.current, meshesRef.current, mtlRef.current!, defaultTextureRef.current);
 			animationFrame.number = requestAnimationFrame(render);
 		}
 		animationFrame.number = requestAnimationFrame(render);
@@ -90,14 +109,13 @@ export function Canvas() {
 		};
 	}, [animationFrame]);
 
+	// Triggered when material properties change
 	useEffect(() => {
 		const gl = glRef.current!;
 		const programInfo = programsRef.current;
-		const mtl = mtlRef.current!;
 		
 		// Update default texture color
-		mtl.defaultTexture = mtl.defaultTexture || gl.createTexture();
-		gl.bindTexture(gl.TEXTURE_2D, mtl.defaultTexture);
+		gl.bindTexture(gl.TEXTURE_2D, defaultTextureRef.current);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([Math.floor(255 * material.diffuse[0]), Math.floor(255 * material.diffuse[1]), Math.floor(255 * material.diffuse[2]), 255]));
 		
 		// Update material uniforms
@@ -107,121 +125,99 @@ export function Canvas() {
 
 	}, [material.ambient, material.diffuse, material.specular]);
 
-	useEffect(() => {
-		const gl = glRef.current!;
-		const programInfo = programsRef.current;
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.color"), dirLight.color);
-	}, [dirLight.color]);
-
-	useEffect(() => {
-		const gl = glRef.current!;
-		const programInfo = programsRef.current;
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.color"), pointLight.color);
-	}, [pointLight.color]);
-
-	const [yaw, setYaw] = useState(0);
-	const [deltaYaw, setDeltaYaw] = useState(0);
-
-	const [pitch, setPitch] = useState(0);
-	const [deltaPitch, setDeltaPitch] = useState(0);
-
+	// Triggered when directional light changes
 	useEffect(() => {
 		const gl = glRef.current!;
 		const programInfo = programsRef.current;
 
-		const yawAngle = -Math.PI / 180 * (yaw + deltaYaw);
-		const pitchAngle = Math.PI / 180 * Math.max(-90, Math.min(90, pitch + deltaPitch));
-		const cameraPos = vec3.fromValues(Math.cos(pitchAngle) * Math.sin(yawAngle), Math.sin(pitchAngle), Math.cos(pitchAngle) * Math.cos(yawAngle));
-		vec3.scale(cameraPos, cameraPos, 4);
-
-		const fov = (45 * Math.PI) / 180;
-		const aspect =  canvas.current!.clientWidth / canvas.current!.clientHeight;
-		const zNear = 0.1;
-		const zFar = 1000;
-		const projectionMatrix = mat4.create();
-		mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
-		
-		const modelMatrix = mat4.create();
-		const positionVec = vec3.fromValues(position[0], position[1], position[2]);
-		const scaleVec = vec3.fromValues(scale[0], scale[1], scale[2]);
-		const rotationVec = vec3.fromValues(rotation[0], rotation[1], rotation[2]);
-		vec3.scale(rotationVec, rotationVec, Math.PI/180);
-		vec3.scale(scaleVec, scaleVec, scale[3]);
-		mat4.translate(modelMatrix, modelMatrix, positionVec);
-		mat4.rotate(modelMatrix, modelMatrix, rotationVec[1], [0, 1, 0]);
-		mat4.rotate(modelMatrix, modelMatrix, rotationVec[0], [1, 0, 0]);
-		mat4.rotate(modelMatrix, modelMatrix, rotationVec[2], [0, 0, 1]);
-		mat4.scale(modelMatrix, modelMatrix, scaleVec);
-
-		const viewMatrix = mat4.create();
-		mat4.lookAt(viewMatrix, cameraPos, [0, 0, 0], [0, 1, 0]);
-
-		const modelViewMatrix = mat4.create();
-		mat4.mul(modelViewMatrix, viewMatrix, modelMatrix);
-
-		const normalMatrix = mat4.create();
-		mat4_inverse(modelViewMatrix, normalMatrix);
-		mat4.transpose(normalMatrix, normalMatrix);
-
+		// Transform light direction by view matrix
 		const dirLightTransformed =  vec4.fromValues(dirLight.direction[0], dirLight.direction[1], dirLight.direction[2], 1);
-		vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrix);
+		vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrixRef.current);
+
+		// Update directional light color uniforms
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.direction"), dirLightTransformed.slice(0, 3));
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.color"), dirLight.color);
 
+	}, [dirLight.direction, dirLight.color]);
+
+	// Triggered when point light changes
+	useEffect(() => {
+		const gl = glRef.current!;
+		const programInfo = programsRef.current;
+
+		// Transform point light position by view matrix
 		const pointLightTransformed =  vec4.fromValues(pointLight.position[0], pointLight.position[1], pointLight.position[2], 1);
-		vec4.transformMat4(pointLightTransformed, pointLightTransformed, viewMatrix);
-		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.position"), pointLightTransformed.slice(0, 3));
+		vec4.transformMat4(pointLightTransformed, pointLightTransformed, viewMatrixRef.current);
 
-		
-		gl!.uniformMatrix4fv(
-			programInfo.uniformLocations.modelViewMatrix,
-			false,
-			modelViewMatrix
-		);
-		gl!.uniformMatrix4fv(
-			programInfo.uniformLocations.projectionMatrix,
-			false,
-			projectionMatrix
-		);
-		gl!.uniformMatrix4fv(
-			programInfo.uniformLocations.normalMatrix,
-			false,
-			normalMatrix
-		);
-	}, [animationFrame, dirLight.direction, pointLight.position, position, rotation, scale, deltaYaw, yaw, pitch, deltaPitch]);
+		// Update point light uniforms
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.position"), pointLightTransformed.slice(0, 3));
+		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.color"), pointLight.color);
+	}, [pointLight.position, pointLight.color]);
+
+	// Update view matrix when camera rotation changes
+	useEffect(() => {
+		calculateViewMatrix(viewMatrixRef.current, yaw + deltaYaw, pitch + deltaPitch, 2);
+		updateModelViewAndNormalMatrices();
+	}, [deltaYaw, yaw, pitch, deltaPitch]);
+
+	// Update model matrix when model transformations change
+	useEffect(() => {
+		calculateModelMatrix(modelMatrixRef.current, position, scale, rotation);
+		updateModelViewAndNormalMatrices();
+	}, [position, scale, rotation]);
+
+	// Update model view matrix, normal matrix, and projection matrix
+	const updateModelViewAndNormalMatrices = () => {
+		const gl = glRef.current!;
+		const programInfo = programsRef.current;
+
+		mat4.mul(modelViewMatrixRef.current, viewMatrixRef.current, modelMatrixRef.current);
+		calculateNormalMatrix(normalMatrixRef.current, modelViewMatrixRef.current);
+
+		// Update transform matrix uniforms
+		gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrixRef.current);
+		gl.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrixRef.current);
+		gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrixRef.current);
+	}
 
 	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
-	
-	useEffect(() => {
-		const handleMouseUp = () => {
-			mouseStartPos.current = null;
-			setYaw(yaw + deltaYaw);
-			setDeltaYaw(0);
-			setPitch(pitch + deltaPitch);
-			setDeltaPitch(0);
-		};
 
-		document.addEventListener("mouseup", handleMouseUp);
-		return () => {
-			document.removeEventListener("mouseup", handleMouseUp);
-		};
-	}, [deltaPitch, deltaYaw, pitch, yaw]);
+	// Add event listener for when the mouse is moved, used for computing camera rotation
 	useEffect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
 			if (mouseStartPos.current) {
-				setDeltaYaw(200 * (e.clientX - mouseStartPos.current!.clientX) / window.innerWidth);
-				setDeltaPitch(200 * (e.clientY - mouseStartPos.current!.clientY) / window.innerHeight);
+				setDeltaYaw(200 * (e.clientX - mouseStartPos.current.clientX) / window.innerWidth);
+				setDeltaPitch(200 * (e.clientY - mouseStartPos.current.clientY) / window.innerHeight);
 			}
 		};
 
 		document.addEventListener("mousemove", handleMouseMove);
+
 		return () => {
 			document.removeEventListener("mousemove", handleMouseMove);
 		};
 	}, []);
 
+	// Add event listener for when the mouse button is released, used for computing camera rotation
+	useEffect(() => {
+		const handleMouseUp = () => {
+			mouseStartPos.current = null;
+			setYaw(yaw + deltaYaw);
+			setPitch(pitch + deltaPitch);
+			setDeltaYaw(0);
+			setDeltaPitch(0);
+		};
+
+		document.addEventListener("mouseup", handleMouseUp);
+
+		return () => {
+			document.removeEventListener("mouseup", handleMouseUp);
+		};
+	}, [deltaPitch, deltaYaw, pitch, yaw]);
+
 	return (
 		<canvas 
-			ref={canvas} 
+			ref={canvasRef} 
 			id="gl-canvas" 
 			width="800" 
 			height="500"

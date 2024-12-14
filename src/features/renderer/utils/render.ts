@@ -2,7 +2,7 @@ import { MeshWithBuffers } from "webgl-obj-loader";
 import { ProgramInfo } from "../types";
 import { MtlWithTextures } from "./mtl";
 
-export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, meshes: MeshWithBuffers[], mtl: MtlWithTextures) {
+export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, meshes: MeshWithBuffers[], mtl: MtlWithTextures, defaultTexture: WebGLTexture | null) {
     gl.useProgram(programInfo.program);
     gl.clearColor(.235, .235, .235, 1);
     gl.clearDepth(1);
@@ -17,7 +17,7 @@ export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, m
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
     for (const mesh of meshes) {  
-        const texture = mtl.textures.get(mesh.materialNames[0]) || mtl.defaultTexture;
+        const texture = mtl.textures.get(mesh.materialNames[0]) || defaultTexture;
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
         

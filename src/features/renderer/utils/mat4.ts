@@ -1,8 +1,7 @@
 import { mat4 } from "gl-matrix";
 
 export function mat4_inverse(a: mat4, b: mat4) {
-	b || (b = a);
-	var c = a[0], d = a[1], e = a[2], g = a[3], f = a[4], h = a[5], i = a[6], j = a[7], k = a[8], l = a[9], o = a[10], m = a[11], n = a[12], p = a[13], r = a[14], s = a[15], A = c
+	const c = a[0], d = a[1], e = a[2], g = a[3], f = a[4], h = a[5], i = a[6], j = a[7], k = a[8], l = a[9], o = a[10], m = a[11], n = a[12], p = a[13], r = a[14], s = a[15], A = c
 			* h - d * f, B = c * i - e * f, t = c * j - g * f, u = d * i - e
 			* h, v = d * j - g * h, w = e * j - g * i, x = k * p - l * n, y = k
 			* r - o * n, z = k * s - m * n, C = l * r - o * p, D = l * s - m
