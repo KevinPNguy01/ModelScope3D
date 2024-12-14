@@ -1,19 +1,127 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Model Viewer</title>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
-      integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
-      crossorigin="anonymous"
-      defer>
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/app/main.tsx"></script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>3D Model Viewer</title>
+		<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+		integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+		crossorigin="anonymous"
+		defer>
+		</script>
+	</head>
+	<body>
+		<script id="triangles-vertex-shader" type="x-shader/x-vertex">
+			uniform mat4 uModelViewMatrix;
+			uniform mat4 uProjectionMatrix;
+			uniform mat4 uNormalMatrix;      
+
+			attribute vec3 aVertexPosition;     // Vertex position in object space
+			attribute vec3 aVertexNormal;       // Vertex normal in object space
+			attribute vec2 aTextureCoord;
+
+			varying vec3 vPosition;             // Vertex position (camera space)
+			varying vec3 vNormal;               // Vertex normal (camera space)
+			varying vec2 vTextureCoord;
+
+			void main(void) {
+				vec4 camSpacePosition = uModelViewMatrix * vec4(aVertexPosition, 1.0);
+				vPosition = vec3(camSpacePosition);
+
+				gl_Position = uProjectionMatrix * camSpacePosition;
+
+				vec4 camSpaceNormal = uNormalMatrix * vec4(aVertexNormal, 0.0);
+				vNormal = vec3(camSpaceNormal);
+
+				vTextureCoord = aTextureCoord;
+			}
+		</script>
+		<script id="triangles-fragment-shader" type="x-shader/x-fragment">
+			precision mediump float;
+
+			struct Material {
+				vec3 ambient;
+				vec3 diffuse;
+				vec3 specular;
+				float shininess;
+			}; 
+
+			struct DirLight {
+				vec3 direction;
+				vec3 color;
+			};
+
+			struct PointLight {    
+				vec3 position;
+				
+				float constant;
+				float linear;
+				float quadratic;  
+
+				vec3 color;
+			};  
+
+			uniform PointLight pointLight;
+			uniform Material material;
+			uniform DirLight dirLight;
+
+			uniform sampler2D uSampler;
+
+			varying vec3 vPosition;
+			varying vec3 vNormal;
+			varying highp vec2 vTextureCoord;
+
+			vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
+				vec3 lightDir = normalize(-light.direction);
+				vec3 halfwayDir = normalize(lightDir + viewDir);
+				// diffuse shading
+				float diff = max(dot(normal, lightDir), 0.0);
+				// specular shading
+				float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+				// combine results
+				vec3 ambient  = light.color * material.ambient;
+				vec3 diffuse  = light.color * diff * (texture2D(uSampler, vTextureCoord).rgb);
+				vec3 specular = light.color * spec * material.specular;
+				return (ambient + diffuse + specular);
+			}
+
+			vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+				vec3 lightDir = normalize(light.position - fragPos);
+				vec3 halfwayDir = normalize(lightDir + viewDir);
+				// diffuse shading
+				float diff = max(dot(normal, lightDir), 0.0);
+				// specular shading
+				float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+				// attenuation
+				float distance = length(light.position - fragPos);
+				float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+				// combine results
+				vec3 ambient  = light.color * material.ambient;
+				vec3 diffuse  = light.color * diff * texture2D(uSampler, vTextureCoord).rgb;
+				vec3 specular = light.color * spec * material.specular;
+				ambient  *= attenuation;
+				diffuse  *= attenuation;
+				specular *= attenuation;
+				return (ambient + diffuse + specular);
+			} 
+
+			void main() {
+				vec3 norm = normalize(vNormal);
+				vec3 viewDir = normalize(-vPosition);
+
+				if (dot(norm, viewDir) < 0.0) {
+					norm = -norm;
+				}
+
+				vec3 result = CalcDirLight(dirLight, norm, viewDir);
+				result += CalcPointLight(pointLight, norm, vPosition, viewDir);    
+				
+				gl_FragColor = vec4(result, 1.0);
+			}
+		</script>
+		<div id="root"></div>
+		<script type="module" src="/src/app/main.tsx"></script>
+	</body>
 </html>

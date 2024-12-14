@@ -4,9 +4,9 @@ export const lightingSlice = createSlice({
     name: "lighting",
     initialState: {
         material: {
-            ambient: [0, 0, 0],
+            ambient: [0.05, 0.05, 0.05],
             diffuse: [0, 0.5, 1],
-            specular: [0.5, 0.5, 0.5],
+            specular: [0.25, 0.25, 0.25],
             shininess: 32.0
         },
         dirLight: {
@@ -14,7 +14,7 @@ export const lightingSlice = createSlice({
             color: [0.9, 0.9, 0.9],
         },
         pointLight: {
-            position: [-1, 0, -2],
+            position: [-1, 0, 0],
             constant: 1.0,
             linear: 0.7,
             quadratic: 1.8,

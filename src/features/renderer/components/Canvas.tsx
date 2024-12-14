@@ -16,10 +16,6 @@ import { setUniforms } from "../utils/uniforms";
 export function Canvas() {
 	const canvas = useRef<HTMLCanvasElement | null>(null);
 	const [animationFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
-	const [canceledFrame, ] = useState({number: 0});	// Keep track of frame number to cancel in case of re-render.
-	const [meshes, setMeshes] = useState<MeshWithBuffers[]>([]);
-	const [mtl, setMtl] = useState<MtlWithTextures>();
-	const [programInfo, setProgramInfo] = useState<ProgramInfo>();
 	const position = useSelector(selectPosition);
     const scale = useSelector(selectScale);
     const rotation = useSelector(selectRotation);
@@ -29,144 +25,99 @@ export function Canvas() {
 	const pointLight = useSelector(selectPointLight);
 
 	const {objFile, mtlFile, stlFile} = useContext(FileContext);
+	const glRef = useRef<WebGLRenderingContext>();
+	const meshesRef = useRef<MeshWithBuffers[]>([]);
+	const mtlRef = useRef<MtlWithTextures>();
+	const programsRef = useRef<ProgramInfo>({} as ProgramInfo);
 
 	useEffect(() => {
+		// Initialize WebGLRenderingContext
 		const gl = canvas.current!.getContext("webgl");
 		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
-		(async () => {
-			if (stlFile) {
-				const meshes = await loadSTLModel(gl, stlFile);
-				setMeshes(meshes);
-			}
-		})();
-	}, [stlFile]);
+		glRef.current = gl;
+		
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-	useEffect(() => {
-		const gl = canvas.current!.getContext("webgl");
-		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
-		(async () => {
-			if (objFile) {
-				const meshes = await loadOBJModel(gl, objFile);
-				setMeshes(meshes);
-			}
-		})();
-	}, [objFile]);
+		mtlRef.current = initMtlTextures(gl, new Mtl(""));
 
-	useEffect(() => {
-		const gl = canvas.current!.getContext("webgl");
-		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
-		(async () => {
-			if (mtlFile) {
-				const mtl = await loadMtlFile(gl, mtlFile);
-				setMtl(mtl);
-			} else {
-				setMtl(initMtlTextures(gl, new Mtl("")));
-			}
-		})();
-	}, [mtlFile]);
+		const shaderProgram = initShaderProgram(gl, "triangles-vertex-shader", "triangles-fragment-shader");
+		programsRef.current = {
+			program: shaderProgram,
+			attribLocations: {
+				vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
+				vertexNormal: gl.getAttribLocation(shaderProgram, "aVertexNormal"),
+				vertexColor: -1,
+				textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord")
+			},
+			uniformLocations: {
+				modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
+				projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
+				normalMatrix: gl.getUniformLocation(shaderProgram, "uNormalMatrix"),
+				uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
 
+				lightPos: gl.getUniformLocation(shaderProgram, "uLightPos"),
+				lightPower: gl.getUniformLocation(shaderProgram, "uLightPower"),
+				kd: gl.getUniformLocation(shaderProgram, "uDiffuseColor"),
+				specular: gl.getUniformLocation(shaderProgram, "uSpecularColor"),
+				ambient: gl.getUniformLocation(shaderProgram, "uAmbient"),
+				indexOfRefraction: gl.getUniformLocation(shaderProgram, "uIOR"),
+				beta: gl.getUniformLocation(shaderProgram, "uBeta"),
+
+				pointLight: gl.getUniformLocation(shaderProgram, "pointLight"),
+				material: gl.getUniformLocation(shaderProgram, "material"),
+				dirLight: gl.getUniformLocation(shaderProgram, "dirLight"),
+			},
+		};
+
+		gl.useProgram(shaderProgram);
+		setUniforms(gl, shaderProgram);
+	}, [])
+
+	useEffect(() => {(async () => {if (stlFile) meshesRef.current = await loadSTLModel(glRef.current!, stlFile)})()}, [stlFile]);
+	useEffect(() => {(async () => {if (objFile) meshesRef.current = await loadOBJModel(glRef.current!, objFile)})()}, [objFile]);
+	useEffect(() => {(async () => {if (mtlFile) mtlRef.current = await loadMtlFile(glRef.current!, mtlFile)})()}, [mtlFile]);
+
+	// Start the render loop
 	useEffect(() => {
-		let isRendering = false;
-		const gl = canvas.current!.getContext("webgl");
-		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 		function render() {
-			if (gl && programInfo && mtl) drawScene(gl, programInfo, meshes, mtl);
+			drawScene(glRef.current!, programsRef.current, meshesRef.current, mtlRef.current!);
 			animationFrame.number = requestAnimationFrame(render);
 		}
-		if (isRendering) {
-			console.warn("Render loop is already running!");
-			return;
-		}
-		isRendering = true;
 		animationFrame.number = requestAnimationFrame(render);
+
 		return () => {
-			isRendering = false;
 			cancelAnimationFrame(animationFrame.number);
 		};
-	}, [animationFrame, animationFrame.number, meshes, mtl, programInfo]);
+	}, [animationFrame]);
 
 	useEffect(() => {
-		(async () => {
-			const gl = canvas.current!.getContext("webgl");
-			if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
-			setMtl(initMtlTextures(gl, new Mtl("")));
-
-			const shaderProgram = await initShaderProgram(gl, "vertex.vs", "newFragment.fs");
-			setProgramInfo({
-				program: shaderProgram,
-				attribLocations: {
-					vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-					vertexNormal: gl.getAttribLocation(shaderProgram, "aVertexNormal"),
-					vertexColor: -1,
-					textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord")
-				},
-				uniformLocations: {
-					modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-					projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
-					normalMatrix: gl.getUniformLocation(shaderProgram, "uNormalMatrix"),
-					uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
-
-					lightPos: gl.getUniformLocation(shaderProgram, "uLightPos"),
-					lightPower: gl.getUniformLocation(shaderProgram, "uLightPower"),
-					kd: gl.getUniformLocation(shaderProgram, "uDiffuseColor"),
-					specular: gl.getUniformLocation(shaderProgram, "uSpecularColor"),
-					ambient: gl.getUniformLocation(shaderProgram, "uAmbient"),
-					indexOfRefraction: gl.getUniformLocation(shaderProgram, "uIOR"),
-					beta: gl.getUniformLocation(shaderProgram, "uBeta"),
-
-					pointLight: gl.getUniformLocation(shaderProgram, "pointLight"),
-					material: gl.getUniformLocation(shaderProgram, "material"),
-					dirLight: gl.getUniformLocation(shaderProgram, "dirLight"),
-				},
-			});
-
-			gl.useProgram(shaderProgram);
-			setUniforms(gl, shaderProgram);
-
-		})();
-	}, []);
-
-	useEffect(() => {
-		const gl = canvas.current!.getContext("webgl");
-		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
-
-		if (programInfo === undefined) return;
-
-		if (mtl) {
-			gl.bindTexture(gl.TEXTURE_2D, mtl.defaultTexture);
-        	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([Math.floor(255 * material.diffuse[0]), Math.floor(255 * material.diffuse[1]), Math.floor(255 * material.diffuse[2]), 255]));
-		}
-
+		const gl = glRef.current!;
+		const programInfo = programsRef.current;
+		const mtl = mtlRef.current!;
+		
+		// Update default texture color
+		mtl.defaultTexture = mtl.defaultTexture || gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, mtl.defaultTexture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([Math.floor(255 * material.diffuse[0]), Math.floor(255 * material.diffuse[1]), Math.floor(255 * material.diffuse[2]), 255]));
+		
+		// Update material uniforms
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.ambient"), material.ambient);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.diffuse"), material.diffuse);
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "material.specular"), material.specular);
 
-		
-	}, [material.ambient, material.diffuse, material.specular, meshes, mtl, programInfo]);
+	}, [material.ambient, material.diffuse, material.specular]);
 
 	useEffect(() => {
-		const gl = canvas.current!.getContext("webgl");
-		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
-
-		if (programInfo === undefined) return;
-
+		const gl = glRef.current!;
+		const programInfo = programsRef.current;
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "dirLight.color"), dirLight.color);
-
-		
-	}, [dirLight.color, meshes, mtl, programInfo]);
+	}, [dirLight.color]);
 
 	useEffect(() => {
-		const gl = canvas.current!.getContext("webgl");
-		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
-
-		if (programInfo === undefined) return;
-
+		const gl = glRef.current!;
+		const programInfo = programsRef.current;
 		gl.uniform3fv(gl.getUniformLocation(programInfo.program, "pointLight.color"), pointLight.color);
-
-		
-	}, [pointLight.color, meshes, programInfo, mtl]);
+	}, [pointLight.color]);
 
 	const [yaw, setYaw] = useState(0);
 	const [deltaYaw, setDeltaYaw] = useState(0);
@@ -175,10 +126,8 @@ export function Canvas() {
 	const [deltaPitch, setDeltaPitch] = useState(0);
 
 	useEffect(() => {
-		if (!programInfo || !mtl) return;
-
-		const gl = canvas.current!.getContext("webgl");
-		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
+		const gl = glRef.current!;
+		const programInfo = programsRef.current;
 
 		const yawAngle = -Math.PI / 180 * (yaw + deltaYaw);
 		const pitchAngle = Math.PI / 180 * Math.max(-90, Math.min(90, pitch + deltaPitch));
@@ -238,7 +187,7 @@ export function Canvas() {
 			false,
 			normalMatrix
 		);
-	}, [animationFrame, canceledFrame, dirLight.direction, meshes, pointLight.position, position, programInfo, rotation, scale, mtl, deltaYaw, yaw, pitch, deltaPitch]);
+	}, [animationFrame, dirLight.direction, pointLight.position, position, rotation, scale, deltaYaw, yaw, pitch, deltaPitch]);
 
 	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
 	

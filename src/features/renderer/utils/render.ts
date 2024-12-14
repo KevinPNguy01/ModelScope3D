@@ -3,6 +3,7 @@ import { ProgramInfo } from "../types";
 import { MtlWithTextures } from "./mtl";
 
 export function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo, meshes: MeshWithBuffers[], mtl: MtlWithTextures) {
+    gl.useProgram(programInfo.program);
     gl.clearColor(.235, .235, .235, 1);
     gl.clearDepth(1);
     gl.enable(gl.DEPTH_TEST);

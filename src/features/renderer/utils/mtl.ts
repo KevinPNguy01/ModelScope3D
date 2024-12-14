@@ -83,12 +83,6 @@ export function initMtlTextures(gl: WebGLRenderingContext, mtl: Mtl) {
         mtlWithTextures.textures.set(key, loadTexture(gl, mtl.materials.get(key)!.diffuseMap));
     }
 
-    const texture = gl.createTexture();
-    if (texture) {
-        mtlWithTextures.defaultTexture = texture;
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
-    }
     return mtlWithTextures;
 }
 

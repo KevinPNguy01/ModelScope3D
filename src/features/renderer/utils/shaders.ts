@@ -1,6 +1,6 @@
-export async function initShaderProgram(gl: WebGLRenderingContext, vsPath: string, fsPath: string) {
-    const vertexShader = await loadShader(gl, gl.VERTEX_SHADER, vsPath);
-    const fragmentShader = await loadShader(gl, gl.FRAGMENT_SHADER, fsPath);
+export function initShaderProgram(gl: WebGLRenderingContext, vsName: string, fsName: string) {
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsName);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsName);
 
     const shaderProgram = gl.createProgram();
     if (shaderProgram === null) throw new Error("Error creating shader program");
@@ -14,29 +14,19 @@ export async function initShaderProgram(gl: WebGLRenderingContext, vsPath: strin
     return shaderProgram;
 }
 
-async function loadShader(gl: WebGLRenderingContext, type: GLenum, path: string) {
+function loadShader(gl: WebGLRenderingContext, type: GLenum, name: string) {
     const shader = gl.createShader(type);
     if (shader === null) throw new Error("Error creating shader");
 
-    const source = await loadShaderFile(path);
-    gl.shaderSource(shader, source);
+    const shaderSource = document.getElementById(name)?.textContent;
+    if (!shaderSource) throw new Error(`Error creating shader: Couldn't find shader "${name}"`);
+
+    gl.shaderSource(shader, shaderSource);
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         throw new Error(`Error compiling shader: ${gl.getShaderInfoLog(shader)}`);
     }
+    
     return shader;
 }
-
-const loadShaderFile = async (path: string): Promise<string> => {
-    try {
-        const response = await fetch("./shaders/" + path);
-        if (!response.ok) {
-            throw new Error(`Failed to load shader file: ${path}`);
-        }
-        return await response.text();
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
-};
