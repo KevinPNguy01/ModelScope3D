@@ -1,17 +1,16 @@
 import CloseIcon from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import { MutableRefObject, useRef, useState } from "react";
+import { useRef } from "react";
 
-export function FileUpload({accept, label, fileRef}: {accept: string, label: string, fileRef: MutableRefObject<File | null>}) {
-    const [filename, setFilename] = useState("");
+export function FileUpload({accept, label, fileState}: {accept: string, label: string, fileState: [File | null, (file: File | null) => void]}) {
+    const [file, setFile] = fileState;
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const file = e.target.files.item(0);
-            if (file) {
-                fileRef.current = file;
-                setFilename(file.name);
+            const newFile = e.target.files.item(0);
+            if (newFile) {
+                setFile(newFile);
             }
         }
     };
@@ -27,18 +26,17 @@ export function FileUpload({accept, label, fileRef}: {accept: string, label: str
                 <span
                     className="text-sm text-neutral-400"
                 >
-                    {filename || "Choose File"}
+                    {file?.name || "Choose File"}
                 </span>
-                {filename ? (
+                {file ? (
                     <CloseIcon
                         fontSize='small'
                         style={{ color: '#aaa' }}
                         className="cursor-pointer"
                         onClick={(e) => {
                             e.preventDefault();
-                            fileRef.current = null;
+                            setFile(null);
                             if (inputRef.current) inputRef.current.value = "";
-                            setFilename("");
                         }}
                     />
                 ) : (

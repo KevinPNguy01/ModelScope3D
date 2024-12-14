@@ -7,7 +7,7 @@ import { selectDirLight, selectMaterial, selectPointLight } from "../../../store
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ProgramInfo } from "../types";
 import { mat4_inverse } from "../utils/mat4";
-import { loadOBJModel } from "../utils/models";
+import { loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
 import { drawScene } from "../utils/render";
 import { initShaderProgram } from "../utils/shaders";
@@ -28,7 +28,18 @@ export function Canvas() {
 	const dirLight = useSelector(selectDirLight);
 	const pointLight = useSelector(selectPointLight);
 
-	const {objFile, mtlFile} = useContext(FileContext);
+	const {objFile, mtlFile, stlFile} = useContext(FileContext);
+
+	useEffect(() => {
+		const gl = canvas.current!.getContext("webgl");
+		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
+		(async () => {
+			if (stlFile) {
+				const meshes = await loadSTLModel(gl, stlFile);
+				setMeshes(meshes);
+			}
+		})();
+	}, [stlFile]);
 
 	useEffect(() => {
 		const gl = canvas.current!.getContext("webgl");

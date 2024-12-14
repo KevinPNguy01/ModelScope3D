@@ -5,6 +5,7 @@ import MenuItem from "@mui/material/MenuItem/MenuItem";
 import { useState } from "react";
 import { ModelType } from "../types";
 import { ImportOBJMenu } from "./ImportOBJMenu";
+import { ImportSTLMenu } from "./ImportSTLMenu";
 
 export function ImportButton() {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -48,6 +49,13 @@ export function ImportButton() {
                 className="z-10"
             >
                 <ImportOBJMenu onClick={() => setModelMenu(ModelType.NONE)}/>
+            </Backdrop>
+            <Backdrop
+                open={modelMenu === ModelType.STL}
+                onClick={() => setModelMenu(ModelType.NONE)}
+                className="z-10"
+            >
+                <ImportSTLMenu onClick={() => setModelMenu(ModelType.NONE)}/>
             </Backdrop>
         </div>
     );

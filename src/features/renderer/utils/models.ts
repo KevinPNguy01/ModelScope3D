@@ -1,6 +1,155 @@
 import { vec3 } from "gl-matrix";
 import { initMeshBuffers, Mesh } from "webgl-obj-loader";
 
+export async function loadSTLModel(gl: WebGLRenderingContext, file: File) {
+    const isBinary = await isBinarySTL(file);
+    
+    if (isBinary) {
+        const stlBuffer = await loadBinaryStlData(file);
+        const mesh = loadBinaryStl(stlBuffer);
+        return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
+    } else {
+        const stlString = await loadAsciiStlData(file);
+        const mesh = loadAsciiStl(stlString);
+        return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
+    }
+}
+
+function isBinarySTL(file: File) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const arrayBuffer = reader.result as ArrayBuffer;
+            const header = new Uint8Array(arrayBuffer, 0, Math.min(80, arrayBuffer.byteLength));
+
+            const text = new TextDecoder().decode(header);
+            resolve(!text.trim().startsWith("solid"));      // Ascii STL starts with "solid"
+        };
+
+        reader.onerror = () => reject(new Error("Failed to read file."));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function loadBinaryStlData(file: File): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            resolve(reader.result as ArrayBuffer)
+        };
+
+        reader.onerror = () => reject(new Error("Failed to read file."));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function loadBinaryStl(buffer: ArrayBuffer) {
+    const mesh = new Mesh("");
+    mesh.indicesPerMaterial = [[]];
+    const view = new DataView(buffer);
+    const triangleCount = view.getUint32(80, true);
+    // Keep track of minimum and maximum dimensions to normalize scale later.
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+    let byteIndex = 84;
+    for (let f = 0; f < triangleCount; ++f) {
+        mesh.indicesPerMaterial[0].push(mesh.vertices.length/3, mesh.vertices.length/3+1, mesh.vertices.length/3+2);
+
+        const nx = view.getFloat32(byteIndex, true);
+        const ny = view.getFloat32(byteIndex+4, true);
+        const nz = view.getFloat32(byteIndex+8, true);
+        mesh.vertexNormals.push(nx, ny, nz, nx, ny, nz, nx, ny, nz);
+        byteIndex += 12;
+        
+        for (let i = 0; i < 9; ++i) {
+            const num = view.getFloat32(byteIndex, true);
+            min[i%3] = Math.min(min[i%3], num);
+            max[i%3] = Math.max(max[i%3], num);
+
+            mesh.vertices.push(num);
+            byteIndex += 4;
+        }
+        byteIndex += 2;
+    }
+    // Find the largest dimension and use to normalize the magnitude of the vertices.
+    const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+    for (let i = 0; i < mesh.vertices.length; ++i) {
+        mesh.vertices[i] /= size;
+    }
+    console.log(mesh)
+    return mesh;
+}
+
+function loadAsciiStlData(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            resolve(reader.result as string)
+        };
+
+        reader.onerror = () => reject(new Error("Failed to read file."));
+        reader.readAsText(file);
+    });
+}
+
+function loadAsciiStl(data: string) {
+    const mesh = new Mesh("")
+    mesh.indicesPerMaterial = [[]];
+
+    // Keep track of minimum and maximum dimensions to normalize scale later.
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+
+    data.split("\n").forEach(line => {
+        const tokens = line.trim().split(" ");
+        switch (tokens[0]) {
+            case "solid":
+                break;
+            case "facet": {
+                const x = Number.parseFloat(tokens[2]);
+                const y = Number.parseFloat(tokens[3]);
+                const z = Number.parseFloat(tokens[4]);
+                mesh.vertexNormals.push(x, y, z, x, y, z, x, y, z);
+                break;
+            }
+            case "outer": 
+                break;
+            case "vertex": {
+                const x = Number.parseFloat(tokens[1]);
+                const y = Number.parseFloat(tokens[2]);
+                const z = Number.parseFloat(tokens[3]);
+
+                min[0] = Math.min(min[0], x);
+                min[1] = Math.min(min[1], y);
+                min[2] = Math.min(min[2], z);
+                max[0] = Math.max(max[0], x);
+                max[1] = Math.max(max[1], y);
+                max[2] = Math.max(max[2], z);
+
+                mesh.indicesPerMaterial[0].push(mesh.vertices.length/3);
+                mesh.vertices.push(x, y, z)
+                break;
+            }
+            case "endloop":
+                break;
+            case "endfacet":
+                break;
+            case "endsolid":
+                break;
+        }
+    });
+
+    // Find the largest dimension and use to normalize the magnitude of the vertices.
+    const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+    for (let i = 0; i < mesh.vertices.length; ++i) {
+        mesh.vertices[i] /= size;
+    }
+    return mesh;
+}
+
 export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
     const modelString = await file.text();
 
