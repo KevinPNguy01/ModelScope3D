@@ -1,10 +1,14 @@
 import CloseIcon from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 export function FileUpload({accept, label, fileState}: {accept: string, label: string, fileState: [File | null, (file: File | null) => void]}) {
     const [file, setFile] = fileState;
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!file) inputRef.current!.value = "";
+    }, [file]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
