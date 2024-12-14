@@ -168,12 +168,22 @@ export function Canvas() {
 		
 	}, [pointLight.color, meshes, programInfo, mtl]);
 
+	const [yaw, setYaw] = useState(0);
+	const [deltaYaw, setDeltaYaw] = useState(0);
+
+	const [pitch, setPitch] = useState(0);
+	const [deltaPitch, setDeltaPitch] = useState(0);
+
 	useEffect(() => {
 		if (!programInfo || !mtl) return;
 
 		const gl = canvas.current!.getContext("webgl");
 		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 
+		const yawAngle = -Math.PI / 180 * (yaw + deltaYaw);
+		const pitchAngle = Math.PI / 180 * Math.max(-90, Math.min(90, pitch + deltaPitch));
+		const cameraPos = vec3.fromValues(Math.cos(pitchAngle) * Math.sin(yawAngle), Math.sin(pitchAngle), Math.cos(pitchAngle) * Math.cos(yawAngle));
+		vec3.scale(cameraPos, cameraPos, 4);
 
 		const fov = (45 * Math.PI) / 180;
 		const aspect =  canvas.current!.clientWidth / canvas.current!.clientHeight;
@@ -195,7 +205,7 @@ export function Canvas() {
 		mat4.scale(modelMatrix, modelMatrix, scaleVec);
 
 		const viewMatrix = mat4.create();
-		mat4.lookAt(viewMatrix, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+		mat4.lookAt(viewMatrix, cameraPos, [0, 0, 0], [0, 1, 0]);
 
 		const modelViewMatrix = mat4.create();
 		mat4.mul(modelViewMatrix, viewMatrix, modelMatrix);
@@ -228,9 +238,47 @@ export function Canvas() {
 			false,
 			normalMatrix
 		);
-	}, [animationFrame, canceledFrame, dirLight.direction, meshes, pointLight.position, position, programInfo, rotation, scale, mtl]);
+	}, [animationFrame, canceledFrame, dirLight.direction, meshes, pointLight.position, position, programInfo, rotation, scale, mtl, deltaYaw, yaw, pitch, deltaPitch]);
+
+	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
+	
+	useEffect(() => {
+		const handleMouseUp = () => {
+			mouseStartPos.current = null;
+			setYaw(yaw + deltaYaw);
+			setDeltaYaw(0);
+			setPitch(pitch + deltaPitch);
+			setDeltaPitch(0);
+		};
+
+		document.addEventListener("mouseup", handleMouseUp);
+		return () => {
+			document.removeEventListener("mouseup", handleMouseUp);
+		};
+	}, [deltaPitch, deltaYaw, pitch, yaw]);
+	useEffect(() => {
+		const handleMouseMove = (e: MouseEvent) => {
+			if (mouseStartPos.current) {
+				setDeltaYaw(200 * (e.clientX - mouseStartPos.current!.clientX) / window.innerWidth);
+				setDeltaPitch(200 * (e.clientY - mouseStartPos.current!.clientY) / window.innerHeight);
+			}
+		};
+
+		document.addEventListener("mousemove", handleMouseMove);
+		return () => {
+			document.removeEventListener("mousemove", handleMouseMove);
+		};
+	}, []);
 
 	return (
-		<canvas ref={canvas} id="gl-canvas" width="800" height="500"></canvas>
+		<canvas 
+			ref={canvas} 
+			id="gl-canvas" 
+			width="800" 
+			height="500"
+			onMouseDown={(e) => {
+				mouseStartPos.current = e;
+			}}
+		/>
 	);
 }

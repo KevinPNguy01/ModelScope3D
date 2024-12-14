@@ -78,7 +78,6 @@ function loadBinaryStl(buffer: ArrayBuffer) {
     for (let i = 0; i < mesh.vertices.length; ++i) {
         mesh.vertices[i] /= size;
     }
-    console.log(mesh)
     return mesh;
 }
 
