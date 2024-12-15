@@ -50,9 +50,7 @@ function loadBinaryStl(buffer: ArrayBuffer) {
     mesh.indicesPerMaterial = [[]];
     const view = new DataView(buffer);
     const triangleCount = view.getUint32(80, true);
-    // Keep track of minimum and maximum dimensions to normalize scale later.
-    const min = [Infinity, Infinity, Infinity];
-    const max = [-Infinity, -Infinity, -Infinity];
+
     let byteIndex = 84;
     for (let f = 0; f < triangleCount; ++f) {
         mesh.indicesPerMaterial[0].push(mesh.vertices.length/3, mesh.vertices.length/3+1, mesh.vertices.length/3+2);
@@ -65,19 +63,13 @@ function loadBinaryStl(buffer: ArrayBuffer) {
         
         for (let i = 0; i < 9; ++i) {
             const num = view.getFloat32(byteIndex, true);
-            min[i%3] = Math.min(min[i%3], num);
-            max[i%3] = Math.max(max[i%3], num);
-
             mesh.vertices.push(num);
             byteIndex += 4;
         }
         byteIndex += 2;
     }
-    // Find the largest dimension and use to normalize the magnitude of the vertices.
-    const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
-    for (let i = 0; i < mesh.vertices.length; ++i) {
-        mesh.vertices[i] /= size;
-    }
+    
+    normalizeMesh(mesh);
     return mesh;
 }
 
@@ -98,10 +90,6 @@ function loadAsciiStl(data: string) {
     const mesh = new Mesh("")
     mesh.indicesPerMaterial = [[]];
 
-    // Keep track of minimum and maximum dimensions to normalize scale later.
-    const min = [Infinity, Infinity, Infinity];
-    const max = [-Infinity, -Infinity, -Infinity];
-
     data.split("\n").forEach(line => {
         const tokens = line.trim().split(" ");
         switch (tokens[0]) {
@@ -121,13 +109,6 @@ function loadAsciiStl(data: string) {
                 const y = Number.parseFloat(tokens[2]);
                 const z = Number.parseFloat(tokens[3]);
 
-                min[0] = Math.min(min[0], x);
-                min[1] = Math.min(min[1], y);
-                min[2] = Math.min(min[2], z);
-                max[0] = Math.max(max[0], x);
-                max[1] = Math.max(max[1], y);
-                max[2] = Math.max(max[2], z);
-
                 mesh.indicesPerMaterial[0].push(mesh.vertices.length/3);
                 mesh.vertices.push(x, y, z)
                 break;
@@ -141,11 +122,7 @@ function loadAsciiStl(data: string) {
         }
     });
 
-    // Find the largest dimension and use to normalize the magnitude of the vertices.
-    const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
-    for (let i = 0; i < mesh.vertices.length; ++i) {
-        mesh.vertices[i] /= size;
-    }
+    normalizeMesh(mesh);
     return mesh;
 }
 
@@ -158,10 +135,6 @@ export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
     const e2 = vec3.create();
     const norm = vec3.create();
 
-    // Keep track of minimum and maximum dimensions to normalize scale later.
-    const min = [Infinity, Infinity, Infinity];
-    const max = [-Infinity, -Infinity, -Infinity];
-
     // Compute the normals for each vertex by aggregating the normals of each associated face.
     const noNormals = !mesh.vertexNormals.length || isNaN(mesh.vertexNormals[0]);
     if (noNormals) mesh.vertexNormals = new Array(mesh.vertices.length).fill(0);
@@ -173,14 +146,6 @@ export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
             const v1 = getVertex(mesh.vertices, i1);
             const v2 = getVertex(mesh.vertices, i2);
             const v3 = getVertex(mesh.vertices, i3);
-    
-            // Update min and max for each dimension.
-            for (const v of [v1, v2, v3]) {
-                for (let j = 0; j < 3; ++j) {
-                    min[j] = Math.min(min[j], v[j]);
-                    max[j] = Math.max(max[j], v[j]);
-                }
-            }
     
             vec3.sub(e1, v2, v1);
             vec3.sub(e2, v3, v1);
@@ -198,13 +163,7 @@ export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
         }
     }
 
-    // Find the largest dimension and use to normalize the magnitude of the vertices.
-    const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
-    for (let i = 0; i < mesh.vertices.length; ++i) {
-        mesh.vertices[i] /= size;
-    }
-
-    // Normalize normals.
+    // Normalize normals
     for (let i = 0; i < mesh.vertexNormals.length; i += 3) {
         const x = mesh.vertexNormals[i];
         const y = mesh.vertexNormals[i+1];
@@ -217,13 +176,46 @@ export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
         }
     }
 
+    // Set sentinel values for texture coordinates if they don't exist
     if (!mesh.textures.length || isNaN(mesh.textures[0])) {
         mesh.textures = [];
         for (let i = 0; i < mesh.vertices.length / 3 * 2; ++i) {
             mesh.textures.push(-1);
         }  
     }
+
+    normalizeMesh(mesh);
     return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
+}
+
+/**
+ * Normalize the given mesh by setting its maximum dimension size to 1, and centering it at the origin
+ * @param mesh The mesh to normalize
+ */
+function normalizeMesh(mesh: Mesh) {
+    // Keep track of minimum, maximum, and mean dimensions to normalize scale later
+    const min = [Infinity, Infinity, Infinity];
+    const max = [-Infinity, -Infinity, -Infinity];
+
+    // Iterate through all the vertices to find the minimum, maximum, and mean
+    for (let i = 0; i < mesh.vertices.length; i += 3) {
+        const x = mesh.vertices[i], y = mesh.vertices[i+1], z = mesh.vertices[i+2];
+        [x, y, z].forEach((num, i) => {
+            min[i] = Math.min(min[i], num);
+            max[i] = Math.max(max[i], num);
+        });
+    }
+    const center = max.map((num, i) => (num + min[i]) / 2);
+
+    // Find the largest dimension and use to normalize the magnitude of the vertices
+    const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+
+    // Shift each coordinate by the mean in that dimension and then scale
+    for (let i = 0; i < mesh.vertices.length; i += 3) {
+        for (let j = 0; j < 3; ++j) {
+            mesh.vertices[i+j] = (mesh.vertices[i+j] - center[j]) / size;
+        }
+    }
 }
 
 function splitMesh(mesh: Mesh) {
