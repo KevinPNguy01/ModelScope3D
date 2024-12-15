@@ -9,7 +9,7 @@ import { ShaderProgram } from "../types/ShaderProgram";
 import { GridAxisGuides } from "../utils/GridAxisGuides";
 import { loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
-import { drawGridAxisGuides, drawScene } from "../utils/render";
+import { drawAxisGuides, drawGridGuides, drawScene } from "../utils/render";
 import { calculateModelMatrix, calculateNormalMatrix, calculateProjectionMatrix, calculateViewMatrix } from "../utils/transform_matrices";
 
 export function Canvas() {
@@ -59,8 +59,6 @@ export function Canvas() {
 		const gl = canvas.getContext("webgl");
 		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 		glRef.current = gl;
-		gl.enable(gl.BLEND);
-		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		// Initialize textures
 		mtlRef.current = initMtlTextures(gl, new Mtl(""));
@@ -107,7 +105,19 @@ export function Canvas() {
 	useEffect(() => {
 		function render() {
 			drawScene(glRef.current!, programRef.current, meshesRef.current, mtlRef.current!, defaultTextureRef.current);
-			drawGridAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+
+			lineShaderRef.current.use();
+			const modelViewProjectionMatrix = mat4.create();
+
+			mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
+			glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
+			drawGridGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+
+			mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
+			mat4.mul(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrixRef.current);
+			glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
+			drawAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+
 			programRef.current.use();
 			animationFrame.number = requestAnimationFrame(render);
 		}
@@ -157,9 +167,9 @@ export function Canvas() {
 		glRef.current!.uniform3fv(programRef.current.uniformLocations["pointLight.position"], pointLightTransformed.slice(0, 3));
 
 		// Transform light direction by view matrix
-		const dirLightTransformed =  vec4.fromValues(dirLight.direction[0], dirLight.direction[1], dirLight.direction[2], 1);
+		const dirLightTransformed = vec4.fromValues(dirLight.direction[0], dirLight.direction[1], dirLight.direction[2], 1);
 		vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrixRef.current);
-		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.direction"], pointLightTransformed.slice(0, 3));
+		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.direction"], dirLightTransformed.slice(0, 3));
 	}, [deltaYaw, yaw, pitch, deltaPitch, dist, pointLight.position, dirLight.direction])
 
 	// Update model matrix when model transformations change
@@ -180,12 +190,6 @@ export function Canvas() {
 		gl.uniformMatrix4fv(program.uniformLocations.uModelViewMatrix, false, modelViewMatrixRef.current);
 		gl.uniformMatrix4fv(program.uniformLocations.uNormalMatrix, false, normalMatrixRef.current);
 		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMatrixRef.current);
-
-		lineShaderRef.current.use();
-		const modelViewProjectionMatrix = mat4.create();
-		mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
-		gl.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
-		program.use();
 	}
 
 	// Add event listener for when the mouse is moved, used for computing camera rotation

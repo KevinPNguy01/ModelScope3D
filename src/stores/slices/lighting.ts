@@ -5,7 +5,7 @@ export const lightingSlice = createSlice({
     initialState: {
         material: {
             ambient: [0.05, 0.05, 0.05],
-            diffuse: [0, 0.5, 1],
+            diffuse: [0.75, 0.75, 0.75],
             specular: [0.25, 0.25, 0.25],
             shininess: 32.0
         },
