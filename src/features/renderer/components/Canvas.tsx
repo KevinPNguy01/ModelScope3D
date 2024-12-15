@@ -38,12 +38,13 @@ export function Canvas() {
 	const dirLight = useSelector(selectDirLight);
 	const pointLight = useSelector(selectPointLight);
 
-	// State hooks for keeping track of camera rotation
+	// State hooks for keeping track of camera rotation and position
 	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
 	const [yaw, setYaw] = useState(0);
 	const [deltaYaw, setDeltaYaw] = useState(0);
 	const [pitch, setPitch] = useState(0);
 	const [deltaPitch, setDeltaPitch] = useState(0);
+	const [dist, setDist] = useState(2);
 
 	// Transformation matrices
 	const projectionMatrixRef = useRef(mat4.create());
@@ -64,7 +65,7 @@ export function Canvas() {
 		defaultTextureRef.current = gl.createTexture();
 
 		// Initialize projection matrix
-		calculateProjectionMatrix(projectionMatrixRef.current, canvas, 90, 0.1, 1000);
+		calculateProjectionMatrix(projectionMatrixRef.current, canvas, 90, 0.00001, 1000);
 
 		// Initialize line shader program
 		const lineShader = new ShaderProgram(gl, "lines-vertex-shader", "lines-fragment-shader");
@@ -130,38 +131,34 @@ export function Canvas() {
 
 	// Triggered when directional light changes
 	useEffect(() => {
-		const gl = glRef.current!;
-		const program = programRef.current;
-
-		// Transform light direction by view matrix
-		const dirLightTransformed =  vec4.fromValues(dirLight.direction[0], dirLight.direction[1], dirLight.direction[2], 1);
-		vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrixRef.current);
-
 		// Update directional light color uniforms
-		gl.uniform3fv(program.uniformLocations["dirLight.direction"], dirLightTransformed.slice(0, 3));
-		gl.uniform3fv(program.uniformLocations["dirLight.color"], dirLight.color);
-
+		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.color"], dirLight.color);
 	}, [dirLight.direction, dirLight.color]);
 
 	// Triggered when point light changes
 	useEffect(() => {
-		const gl = glRef.current!;
-		const program = programRef.current;
-
-		// Transform point light position by view matrix
-		const pointLightTransformed =  vec4.fromValues(pointLight.position[0], pointLight.position[1], pointLight.position[2], 1);
-		vec4.transformMat4(pointLightTransformed, pointLightTransformed, viewMatrixRef.current);
-
-		// Update point light uniforms
-		gl.uniform3fv(program.uniformLocations["pointLight.position"], pointLightTransformed.slice(0, 3));
-		gl.uniform3fv(program.uniformLocations["pointLight.color"], pointLight.color);
+		// Update point light position uniform
+		glRef.current!.uniform3fv(programRef.current.uniformLocations["pointLight.color"], pointLight.color);
 	}, [pointLight.position, pointLight.color]);
 
 	// Update view matrix when camera rotation changes
 	useEffect(() => {
-		calculateViewMatrix(viewMatrixRef.current, yaw + deltaYaw, pitch + deltaPitch, 2);
+		calculateViewMatrix(viewMatrixRef.current, yaw + deltaYaw, pitch + deltaPitch, dist);
 		updateModelViewAndNormalMatrices();
-	}, [deltaYaw, yaw, pitch, deltaPitch]);
+	}, [deltaYaw, yaw, pitch, deltaPitch, dist]);
+
+	// Update light direction and position when camera rotation changes
+	useEffect(() => {
+		// Transform point light position by view matrix
+		const pointLightTransformed =  vec4.fromValues(pointLight.position[0], pointLight.position[1], pointLight.position[2], 1);
+		vec4.transformMat4(pointLightTransformed, pointLightTransformed, viewMatrixRef.current);
+		glRef.current!.uniform3fv(programRef.current.uniformLocations["pointLight.position"], pointLightTransformed.slice(0, 3));
+
+		// Transform light direction by view matrix
+		const dirLightTransformed =  vec4.fromValues(dirLight.direction[0], dirLight.direction[1], dirLight.direction[2], 1);
+		vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrixRef.current);
+		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.direction"], pointLightTransformed.slice(0, 3));
+	}, [deltaYaw, yaw, pitch, deltaPitch, dist, pointLight.position, dirLight.direction])
 
 	// Update model matrix when model transformations change
 	useEffect(() => {
@@ -193,8 +190,8 @@ export function Canvas() {
 	useEffect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
 			if (!mouseStartPos.current) return;
-			setDeltaYaw(200 * (e.clientX - mouseStartPos.current.clientX) / window.innerWidth);
-			setDeltaPitch(200 * (e.clientY - mouseStartPos.current.clientY) / window.innerHeight);
+			setDeltaYaw(300 * (e.clientX - mouseStartPos.current.clientX) / window.innerWidth);
+			setDeltaPitch(300 * (e.clientY - mouseStartPos.current.clientY) / window.innerHeight);
 		};
 		document.addEventListener("mousemove", handleMouseMove);
 		return () => document.removeEventListener("mousemove", handleMouseMove);
@@ -204,8 +201,8 @@ export function Canvas() {
 	useEffect(() => {
 		const handleMouseUp = () => {
 			mouseStartPos.current = null;
-			setYaw(yaw + deltaYaw);
-			setPitch(pitch + deltaPitch);
+			setYaw((yaw + deltaYaw) % 360);
+			setPitch(Math.max(-90, Math.min(90, pitch + deltaPitch)));
 			setDeltaYaw(0);
 			setDeltaPitch(0);
 		};
@@ -221,6 +218,9 @@ export function Canvas() {
 			height="500"
 			onMouseDown={(e) => {
 				mouseStartPos.current = e;
+			}}
+			onWheel={(e) => {
+				setDist(Math.max(0.1, dist + 0.1 * e.deltaY / Math.abs(e.deltaY)));
 			}}
 		/>
 	);
