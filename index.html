@@ -13,6 +13,28 @@
 		</script>
 	</head>
 	<body>
+		<script id="lines-vertex-shader" type="x-shader/x-vertex">
+			uniform mat4 uModelViewProjectionMatrix;
+
+			attribute vec3 aPosition;
+			attribute vec3 aColor;
+
+			varying vec3 vColor;
+
+			void main() {
+				gl_Position = uModelViewProjectionMatrix * vec4(aPosition, 1.0);
+				vColor = aColor;
+			}
+		</script>
+		<script id="lines-fragment-shader" type="x-shader/x-fragment">
+			precision mediump float;
+
+			varying vec3 vColor;
+
+			void main() {
+				gl_FragColor = vec4(vColor, 0.7);
+			}
+		</script>
 		<script id="triangles-vertex-shader" type="x-shader/x-vertex">
 			uniform mat4 uModelViewMatrix;
 			uniform mat4 uProjectionMatrix;

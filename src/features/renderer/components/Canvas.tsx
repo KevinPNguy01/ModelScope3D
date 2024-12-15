@@ -6,9 +6,10 @@ import { FileContext } from "../../../app/contexts/FileContext";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ShaderProgram } from "../types/ShaderProgram";
+import { GridAxisGuides } from "../utils/GridAxisGuides";
 import { loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
-import { drawScene } from "../utils/render";
+import { drawGridAxisGuides, drawScene } from "../utils/render";
 import { calculateModelMatrix, calculateNormalMatrix, calculateProjectionMatrix, calculateViewMatrix } from "../utils/transform_matrices";
 
 export function Canvas() {
@@ -18,9 +19,11 @@ export function Canvas() {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
 	const programRef = useRef<ShaderProgram>({} as ShaderProgram);
+	const lineShaderRef = useRef<ShaderProgram>({} as ShaderProgram);
 	const meshesRef = useRef<MeshWithBuffers[]>([]);
 	const mtlRef = useRef<MtlWithTextures>();
 	const defaultTextureRef = useRef<WebGLTexture | null>(null);
+	const gridAxisGuidesRef = useRef<GridAxisGuides>({} as GridAxisGuides);
 
 	// Keep track of frame number to cancel in case of re-render.
 	const [animationFrame, ] = useState({number: 0});
@@ -63,6 +66,13 @@ export function Canvas() {
 		// Initialize projection matrix
 		calculateProjectionMatrix(projectionMatrixRef.current, canvas, 90, 0.1, 1000);
 
+		// Initialize line shader program
+		const lineShader = new ShaderProgram(gl, "lines-vertex-shader", "lines-fragment-shader");
+		lineShaderRef.current = lineShader;
+		lineShader.getAttribLocations(["aPosition", "aColor"]);
+		lineShader.getUniformLocations(["uModelViewProjectionMatrix"]);
+		gridAxisGuidesRef.current = new GridAxisGuides(gl, lineShader);
+
 		// Initialize shader program
 		const program = new ShaderProgram(gl, "triangles-vertex-shader", "triangles-fragment-shader");
 		programRef.current = program;
@@ -94,6 +104,8 @@ export function Canvas() {
 	useEffect(() => {
 		function render() {
 			drawScene(glRef.current!, programRef.current, meshesRef.current, mtlRef.current!, defaultTextureRef.current);
+			drawGridAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+			programRef.current.use();
 			animationFrame.number = requestAnimationFrame(render);
 		}
 		animationFrame.number = requestAnimationFrame(render);
@@ -169,6 +181,12 @@ export function Canvas() {
 		gl.uniformMatrix4fv(program.uniformLocations.uModelViewMatrix, false, modelViewMatrixRef.current);
 		gl.uniformMatrix4fv(program.uniformLocations.uNormalMatrix, false, normalMatrixRef.current);
 		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMatrixRef.current);
+
+		lineShaderRef.current.use();
+		const modelViewProjectionMatrix = mat4.create();
+		mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
+		gl.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
+		program.use();
 	}
 
 	// Add event listener for when the mouse is moved, used for computing camera rotation

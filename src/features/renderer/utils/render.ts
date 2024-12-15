@@ -1,5 +1,6 @@
 import { MeshWithBuffers } from "webgl-obj-loader";
 import { ShaderProgram } from "../types/ShaderProgram";
+import { GridAxisGuides } from "./GridAxisGuides";
 import { MtlWithTextures } from "./mtl";
 
 export function drawScene(gl: WebGLRenderingContext, program: ShaderProgram, meshes: MeshWithBuffers[], mtl: MtlWithTextures, defaultTexture: WebGLTexture | null) {
@@ -33,4 +34,19 @@ export function drawScene(gl: WebGLRenderingContext, program: ShaderProgram, mes
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
         gl.drawElements(gl.TRIANGLES, mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
+}
+
+export function drawGridAxisGuides(gl: WebGLRenderingContext, lineShader: ShaderProgram, gridAxisGuides: GridAxisGuides) {
+    lineShader.use();
+
+    gl.enableVertexAttribArray(lineShader.attribLocations.aPosition);
+    gl.enableVertexAttribArray(lineShader.attribLocations.aColor);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gridAxisGuides.pointsBuffer);
+    gl.vertexAttribPointer(lineShader.attribLocations.aPosition, 3, gl.FLOAT, false, 0, 0);
+        
+    gl.bindBuffer(gl.ARRAY_BUFFER, gridAxisGuides.colorsBuffer);
+    gl.vertexAttribPointer(lineShader.attribLocations.aColor, 3, gl.FLOAT, false, 0, 0);
+    
+    gl.drawArrays(gl.LINES, 0, 50);
 }
