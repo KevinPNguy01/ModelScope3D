@@ -59,6 +59,8 @@ export function Canvas() {
 		const gl = canvas.getContext("webgl");
 		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 		glRef.current = gl;
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		// Initialize textures
 		mtlRef.current = initMtlTextures(gl, new Mtl(""));

@@ -26,10 +26,10 @@ export class GridAxisGuides {
         const c = 0.25;
         for (let i = -w; i <= w; i += 0.1) {
             points.push(
-                i, -.001, -w, 
-                i, -.001, w, 
-                -w, -.001, i,
-                w, -.001, i
+                i, 0, -w, 
+                i, 0, w, 
+                -w, 0, i,
+                w, 0, i
             );
             colors.push(c, c, c, c, c, c, c, c, c, c, c, c);
         }
