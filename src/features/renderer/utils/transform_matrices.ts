@@ -17,16 +17,16 @@ export function calculateModelMatrix(out: mat4, position: number[], scale: numbe
     vec3.scale(rotationVec, rotationVec, Math.PI/180);	// Convert to radians
     vec3.scale(scaleVec, scaleVec, scale[3]);			// Scale by overall scale factor
 
-    // Apply scale
-    mat4.scale(out, out, scaleVec);
+    // Apply translation
+    mat4.translate(out, out, positionVec);
 
     // Rotate by euler angles
     mat4.rotate(out, out, rotationVec[1], [0, 1, 0]);
     mat4.rotate(out, out, rotationVec[0], [1, 0, 0]);
     mat4.rotate(out, out, rotationVec[2], [0, 0, 1]);
 
-    // Apply translation
-    mat4.translate(out, out, positionVec);
+    // Apply scale
+    mat4.scale(out, out, scaleVec);
 }
 
 /**
