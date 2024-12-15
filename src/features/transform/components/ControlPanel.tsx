@@ -34,7 +34,7 @@ export function ControlPanel() {
         <div
             ref={panelRef}
             onMouseDown={() => panelRef.current!.classList.add("pointer-events-none")}
-            className="text-neutral-300 flex flex-col bg-secondary p-2"
+            className="text-neutral-300 flex flex-col bg-secondary p-2 select-none"
         >
             <span>Position</span>
             <div className={`flex gap-1`}>

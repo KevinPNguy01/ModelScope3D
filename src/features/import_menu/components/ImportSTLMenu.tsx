@@ -7,7 +7,7 @@ import { FileUpload } from "../../../components/FileUpload";
 export function ImportSTLMenu({onClick}: {onClick: () => void}) {
     const [stlFile, setStlFile] = useState<File | null>(null);
 
-    const {setStlFile: setGlobalStlFile} = useContext(FileContext);
+    const {setObjFile: setGlobalObjFile, setMtlFile: setGlobalMtlFile, setStlFile: setGlobalStlFile} = useContext(FileContext);
 
     return (
         <Card className="w-1/3 h-fit !bg-secondary py-4 px-6 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
@@ -22,6 +22,8 @@ export function ImportSTLMenu({onClick}: {onClick: () => void}) {
                     }}
                     onClick={() => {
                         setGlobalStlFile(stlFile);
+                        setGlobalObjFile(null);
+                        setGlobalMtlFile(null);
                         setStlFile(null);
                         onClick();
                     }}

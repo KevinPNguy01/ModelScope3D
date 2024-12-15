@@ -8,7 +8,7 @@ export function ImportOBJMenu({onClick}: {onClick: () => void}) {
     const [objFile, setObjFile] = useState<File | null>(null);
     const [mtlFile, setMtlFile] = useState<File | null>(null);
 
-    const {setObjFile: setGlobalObjFile, setMtlFile: setGlobalMtlFile} = useContext(FileContext);
+    const {setObjFile: setGlobalObjFile, setMtlFile: setGlobalMtlFile, setStlFile: setGlobalStlFile} = useContext(FileContext);
 
     return (
         <Card className="w-1/3 h-fit !bg-secondary py-4 px-6 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
@@ -25,6 +25,7 @@ export function ImportOBJMenu({onClick}: {onClick: () => void}) {
                     onClick={() => {
                         setGlobalObjFile(objFile);
                         setGlobalMtlFile(mtlFile);
+                        setGlobalStlFile(null);
                         setObjFile(null);
                         setMtlFile(null);
                         onClick();
