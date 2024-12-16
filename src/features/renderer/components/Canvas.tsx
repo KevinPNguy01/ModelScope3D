@@ -1,4 +1,4 @@
-import { mat4, vec4 } from "gl-matrix";
+import { mat4, vec3, vec4 } from "gl-matrix";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
@@ -40,9 +40,9 @@ export function Canvas() {
 
 	// State hooks for keeping track of camera rotation and position
 	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
-	const [yaw, setYaw] = useState(0);
+	const [yaw, setYaw] = useState(45);
 	const [deltaYaw, setDeltaYaw] = useState(0);
-	const [pitch, setPitch] = useState(0);
+	const [pitch, setPitch] = useState(30);
 	const [deltaPitch, setDeltaPitch] = useState(0);
 	const [dist, setDist] = useState(2);
 
@@ -52,6 +52,9 @@ export function Canvas() {
 	const viewMatrixRef = useRef(mat4.create());
 	const modelViewMatrixRef = useRef(mat4.create());
 	const normalMatrixRef = useRef(mat4.create());
+	
+	// Reverse scale vector for axis guides
+	const reverseScaleRef = useRef(vec3.create());
 
 	useEffect(() => {
 		// Initialize WebGLRenderingContext
@@ -104,19 +107,33 @@ export function Canvas() {
 	// Start the render loop
 	useEffect(() => {
 		function render() {
+			const gl = glRef.current!;
+
+			// Clear canvas
+			gl.clearColor(.235, .235, .235, 1);
+			gl.clearDepth(1);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			gl.depthFunc(gl.LEQUAL);
+			gl.enable(gl.DEPTH_TEST);
+
+			// Render model
 			drawScene(glRef.current!, programRef.current, meshesRef.current, mtlRef.current!, defaultTextureRef.current);
 
 			lineShaderRef.current.use();
 			const modelViewProjectionMatrix = mat4.create();
 
+			// Render grid lines
 			mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
 			glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
 			drawGridGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
 
+			// Render model axis lines
 			mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
 			mat4.mul(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrixRef.current);
+			mat4.scale(modelViewProjectionMatrix, modelViewProjectionMatrix, reverseScaleRef.current);
 			glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
-			drawAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+			if (meshesRef.current.length) 
+				drawAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
 
 			programRef.current.use();
 			animationFrame.number = requestAnimationFrame(render);
@@ -171,6 +188,14 @@ export function Canvas() {
 		vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrixRef.current);
 		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.direction"], dirLightTransformed.slice(0, 3));
 	}, [deltaYaw, yaw, pitch, deltaPitch, dist, pointLight.position, dirLight.direction])
+
+	// Update reverse scale vector when scale changes
+	useEffect(() => {
+		reverseScaleRef.current = vec3.fromValues(scale[0], scale[1], scale[2]);
+		vec3.scale(reverseScaleRef.current, reverseScaleRef.current, scale[3]);
+		vec3.scale(reverseScaleRef.current, reverseScaleRef.current, 1/dist)
+		vec3.inverse(reverseScaleRef.current, reverseScaleRef.current);
+	}, [scale, dist]);
 
 	// Update model matrix when model transformations change
 	useEffect(() => {

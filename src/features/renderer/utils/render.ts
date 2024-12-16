@@ -4,18 +4,12 @@ import { GridAxisGuides } from "./GridAxisGuides";
 import { MtlWithTextures } from "./mtl";
 
 export function drawScene(gl: WebGLRenderingContext, program: ShaderProgram, meshes: MeshWithBuffers[], mtl: MtlWithTextures, defaultTexture: WebGLTexture | null) {
+    if (!meshes.length) return;
     program.use();
-    gl.clearColor(.235, .235, .235, 1);
-    gl.clearDepth(1);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
 
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enableVertexAttribArray(program.attribLocations.aVertexPosition);
     gl.enableVertexAttribArray(program.attribLocations.aVertexNormal);
     gl.enableVertexAttribArray(program.attribLocations.aTextureCoord);
-
-    gl.uniform1i(program.uniformLocations.uSampler, 0);
 
     for (const mesh of meshes) {  
         const texture = mtl.textures.get(mesh.materialNames[0]) || defaultTexture;
@@ -50,7 +44,7 @@ export function drawGridGuides(gl: WebGLRenderingContext, lineShader: ShaderProg
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.drawArrays(gl.LINES, 0, 48);
+    gl.drawArrays(gl.LINES, 0, 100);
 }
 
 export function drawAxisGuides(gl: WebGLRenderingContext, lineShader: ShaderProgram, gridAxisGuides: GridAxisGuides) {
