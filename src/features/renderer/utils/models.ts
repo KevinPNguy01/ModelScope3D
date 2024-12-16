@@ -176,14 +176,6 @@ export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
         }
     }
 
-    // Set sentinel values for texture coordinates if they don't exist
-    if (!mesh.textures.length || isNaN(mesh.textures[0])) {
-        mesh.textures = [];
-        for (let i = 0; i < mesh.vertices.length / 3 * 2; ++i) {
-            mesh.textures.push(-1);
-        }  
-    }
-
     normalizeMesh(mesh);
     return splitMesh(mesh).map(mesh => initMeshBuffers(gl, mesh));
 }
