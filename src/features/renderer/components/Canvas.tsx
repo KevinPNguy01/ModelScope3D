@@ -7,13 +7,13 @@ import { selectDirLight, selectMaterial, selectPointLight } from "../../../store
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ShaderProgram } from "../types/ShaderProgram";
 import { GridAxisGuides } from "../utils/GridAxisGuides";
-import { loadOBJModel, loadSTLModel } from "../utils/models";
+import { loadModelFileFromPublic, loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
 import { drawAxisGuides, drawGridGuides, drawScene } from "../utils/render";
 import { calculateModelMatrix, calculateNormalMatrix, calculateProjectionMatrix, calculateViewMatrix } from "../utils/transform_matrices";
 
 export function Canvas() {
-	const {objFile, mtlFile, stlFile} = useContext(FileContext);
+	const {objFile, mtlFile, stlFile, setObjFile, setStlFile} = useContext(FileContext);
 
 	const glRef = useRef<WebGLRenderingContext>();
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -62,6 +62,20 @@ export function Canvas() {
 		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 		glRef.current = gl;
 
+		// Initialize default model (Stanford Bunny)
+		(async () => {
+			const file = await loadModelFileFromPublic("stanford_bunny.obj");
+			if (file === null) return;
+			if (file.type === "model/obj") {
+				setObjFile(file);
+				setStlFile(null);
+			}
+			else if (file.type === "model/stl") {
+				setStlFile(file);
+				setObjFile(null);
+			}
+		})();
+
 		// Initialize textures
 		mtlRef.current = initMtlTextures(gl, new Mtl(""));
 		defaultTextureRef.current = gl.createTexture();
@@ -97,7 +111,7 @@ export function Canvas() {
 		gl.uniform1f(program.uniformLocations["material.shininess"], 32.0);
 
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-	}, [])
+	}, [setObjFile, setStlFile])
 
 	// Update meshes/mtl when imported files change
 	useEffect(() => {(async () => {if (stlFile) meshesRef.current = await loadSTLModel(glRef.current!, stlFile)})()}, [stlFile]);
