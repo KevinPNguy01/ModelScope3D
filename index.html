@@ -36,7 +36,8 @@
 			}
 		</script>
 		<script id="triangles-vertex-shader" type="x-shader/x-vertex">
-			uniform mat4 uModelViewMatrix;
+			uniform mat4 uModelMatrix;
+			uniform mat4 uViewMatrix;
 			uniform mat4 uProjectionMatrix;
 			uniform mat4 uNormalMatrix;      
 
@@ -44,20 +45,16 @@
 			attribute vec3 aVertexNormal;       // Vertex normal in object space
 			attribute vec2 aTextureCoord;
 
-			varying vec3 vPosition;             // Vertex position (camera space)
-			varying vec3 vNormal;               // Vertex normal (camera space)
+			varying vec3 vFragPos;             	// Vertex position in world space
+			varying vec3 vNormal;               // Vertex normal in world space
 			varying vec2 vTextureCoord;
 
 			void main(void) {
-				vec4 camSpacePosition = uModelViewMatrix * vec4(aVertexPosition, 1.0);
-				vPosition = vec3(camSpacePosition);
-
-				gl_Position = uProjectionMatrix * camSpacePosition;
-
-				vec4 camSpaceNormal = uNormalMatrix * vec4(aVertexNormal, 0.0);
-				vNormal = vec3(camSpaceNormal);
-
+				vFragPos = vec3(uModelMatrix * vec4(aVertexPosition, 1.0));
+				vNormal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
 				vTextureCoord = aTextureCoord;
+
+				gl_Position = uProjectionMatrix * uViewMatrix * vec4(vFragPos, 1.0);
 			}
 		</script>
 		<script id="triangles-fragment-shader" type="x-shader/x-fragment">
@@ -90,8 +87,9 @@
 			uniform DirLight dirLight;
 
 			uniform sampler2D uSampler;
+			uniform vec3 uCamPos;
 
-			varying vec3 vPosition;
+			varying vec3 vFragPos;
 			varying vec3 vNormal;
 			varying highp vec2 vTextureCoord;
 
@@ -101,10 +99,11 @@
 				// diffuse shading
 				float diff = max(dot(normal, lightDir), 0.0);
 				// specular shading
-				float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+				vec3 reflectDir = reflect(-lightDir, normal);
+    			float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 				// combine results
 				vec3 ambient  = light.color * material.ambient;
-				vec3 diffuse  = light.color * diff * (texture2D(uSampler, vTextureCoord).rgb);
+				vec3 diffuse  = light.color * diff * texture2D(uSampler, vTextureCoord).rgb;
 				vec3 specular = light.color * spec * material.specular;
 				return (ambient + diffuse + specular);
 			}
@@ -131,14 +130,14 @@
 
 			void main() {
 				vec3 norm = normalize(vNormal);
-				vec3 viewDir = normalize(-vPosition);
+				vec3 viewDir = normalize(uCamPos-vFragPos);
 
 				if (dot(norm, viewDir) < 0.0) {
 					norm = -norm;
 				}
 
 				vec3 result = CalcDirLight(dirLight, norm, viewDir);
-				result += CalcPointLight(pointLight, norm, vPosition, viewDir);    
+				result += CalcPointLight(pointLight, norm, vFragPos, viewDir);    
 				
 				gl_FragColor = vec4(result, 1.0);
 			}

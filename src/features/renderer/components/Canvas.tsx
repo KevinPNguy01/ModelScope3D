@@ -1,4 +1,4 @@
-import { mat4, vec3, vec4 } from "gl-matrix";
+import { mat4, vec3 } from "gl-matrix";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
@@ -47,10 +47,9 @@ export function Canvas() {
 	const [dist, setDist] = useState(2);
 
 	// Transformation matrices
-	const projectionMatrixRef = useRef(mat4.create());
 	const modelMatrixRef = useRef(mat4.create());
 	const viewMatrixRef = useRef(mat4.create());
-	const modelViewMatrixRef = useRef(mat4.create());
+	const projectionMatrixRef = useRef(mat4.create());
 	const normalMatrixRef = useRef(mat4.create());
 	
 	// Reverse scale vector for axis guides
@@ -67,9 +66,6 @@ export function Canvas() {
 		mtlRef.current = initMtlTextures(gl, new Mtl(""));
 		defaultTextureRef.current = gl.createTexture();
 
-		// Initialize projection matrix
-		calculateProjectionMatrix(projectionMatrixRef.current, canvas, 90, 0.00001, 1000);
-
 		// Initialize line shader program
 		const lineShader = new ShaderProgram(gl, "lines-vertex-shader", "lines-fragment-shader");
 		lineShaderRef.current = lineShader;
@@ -82,13 +78,17 @@ export function Canvas() {
 		programRef.current = program;
 		program.getAttribLocations(["aVertexPosition", "aVertexNormal", "aTextureCoord"]);
 		program.getUniformLocations([
-			"uModelViewMatrix", "uProjectionMatrix", "uNormalMatrix",
+			"uModelMatrix", "uViewMatrix", "uProjectionMatrix", "uNormalMatrix",
 			"pointLight.position", "pointLight.constant", "pointLight.linear", "pointLight.quadratic", "pointLight.color",
 			"material.ambient", "material.diffuse", "material.specular", "material.shininess",
 			"dirLight.direction", "dirLight.color",
-			"uSampler"
+			"uSampler", "uCamPos"
 		]);
 		program.use();
+
+		// Initialize projection matrix
+		calculateProjectionMatrix(projectionMatrixRef.current, canvas, 90, 0.00001, 1000);
+		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMatrixRef.current);
 
 		// These uniforms might be configurable in the future, for now won't change.
 		gl.uniform1f(program.uniformLocations["pointLight.constant"], 1.0);
@@ -161,33 +161,26 @@ export function Canvas() {
 	// Triggered when directional light changes
 	useEffect(() => {
 		// Update directional light color uniforms
+		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.direction"], dirLight.direction);
 		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.color"], dirLight.color);
 	}, [dirLight.direction, dirLight.color]);
 
 	// Triggered when point light changes
 	useEffect(() => {
-		// Update point light position uniform
+		glRef.current!.uniform3fv(programRef.current.uniformLocations["pointLight.position"], pointLight.position);
 		glRef.current!.uniform3fv(programRef.current.uniformLocations["pointLight.color"], pointLight.color);
 	}, [pointLight.position, pointLight.color]);
 
-	// Update view matrix when camera rotation changes
+	// Update view matrix and camera position uniform when camera rotation changes
 	useEffect(() => {
-		calculateViewMatrix(viewMatrixRef.current, yaw + deltaYaw, pitch + deltaPitch, dist);
-		updateModelViewAndNormalMatrices();
+		const yawAngle = -Math.PI / 180 * (yaw + deltaYaw);
+		const pitchAngle = Math.PI / 180 * Math.max(-90, Math.min(90, (pitch + deltaPitch)));
+		const cameraPos = vec3.fromValues(Math.cos(pitchAngle) * Math.sin(yawAngle), Math.sin(pitchAngle), Math.cos(pitchAngle) * Math.cos(yawAngle));
+		vec3.scale(cameraPos, cameraPos, dist);
+		calculateViewMatrix(viewMatrixRef.current, yaw+deltaYaw, pitch+deltaPitch, dist);
+		glRef.current!.uniformMatrix4fv(programRef.current.uniformLocations.uViewMatrix, false, viewMatrixRef.current);
+		glRef.current!.uniform3fv(programRef.current.uniformLocations.uCamPos, cameraPos);
 	}, [deltaYaw, yaw, pitch, deltaPitch, dist]);
-
-	// Update light direction and position when camera rotation changes
-	useEffect(() => {
-		// Transform point light position by view matrix
-		const pointLightTransformed =  vec4.fromValues(pointLight.position[0], pointLight.position[1], pointLight.position[2], 1);
-		vec4.transformMat4(pointLightTransformed, pointLightTransformed, viewMatrixRef.current);
-		glRef.current!.uniform3fv(programRef.current.uniformLocations["pointLight.position"], pointLightTransformed.slice(0, 3));
-
-		// Transform light direction by view matrix
-		const dirLightTransformed = vec4.fromValues(dirLight.direction[0], dirLight.direction[1], dirLight.direction[2], 1);
-		vec4.transformMat4(dirLightTransformed, dirLightTransformed, viewMatrixRef.current);
-		glRef.current!.uniform3fv(programRef.current.uniformLocations["dirLight.direction"], dirLightTransformed.slice(0, 3));
-	}, [deltaYaw, yaw, pitch, deltaPitch, dist, pointLight.position, dirLight.direction])
 
 	// Update reverse scale vector when scale changes
 	useEffect(() => {
@@ -197,25 +190,15 @@ export function Canvas() {
 		vec3.inverse(reverseScaleRef.current, reverseScaleRef.current);
 	}, [scale, dist]);
 
-	// Update model matrix when model transformations change
+	// Update model and normal matrix when model transformations change
 	useEffect(() => {
 		calculateModelMatrix(modelMatrixRef.current, position, scale, rotation);
-		updateModelViewAndNormalMatrices();
+		calculateNormalMatrix(normalMatrixRef.current, modelMatrixRef.current);
+
+		// Update uniforms
+		glRef.current!.uniformMatrix4fv(programRef.current.uniformLocations.uModelMatrix, false, modelMatrixRef.current);
+		glRef.current!.uniformMatrix4fv(programRef.current.uniformLocations.uNormalMatrix, false, normalMatrixRef.current);
 	}, [position, scale, rotation]);
-
-	// Update model view matrix, normal matrix, and projection matrix
-	const updateModelViewAndNormalMatrices = () => {
-		const gl = glRef.current!;
-		const program = programRef.current;
-
-		mat4.mul(modelViewMatrixRef.current, viewMatrixRef.current, modelMatrixRef.current);
-		calculateNormalMatrix(normalMatrixRef.current, modelViewMatrixRef.current);
-
-		// Update transform matrix uniforms
-		gl.uniformMatrix4fv(program.uniformLocations.uModelViewMatrix, false, modelViewMatrixRef.current);
-		gl.uniformMatrix4fv(program.uniformLocations.uNormalMatrix, false, normalMatrixRef.current);
-		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMatrixRef.current);
-	}
 
 	// Add event listener for when the mouse is moved, used for computing camera rotation
 	useEffect(() => {
