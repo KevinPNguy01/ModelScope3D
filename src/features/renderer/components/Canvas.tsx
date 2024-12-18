@@ -64,7 +64,7 @@ export function Canvas() {
 
 		// Initialize default model
 		(async () => {
-			const file = await loadModelFileFromPublic("sphere.obj");
+			const file = await loadModelFileFromPublic("stanford_bunny.obj");
 			if (file === null) return;
 			if (file.type === "model/obj") {
 				setObjFile(file);
@@ -94,7 +94,7 @@ export function Canvas() {
 		program.getUniformLocations([
 			"uModelMatrix", "uViewMatrix", "uProjectionMatrix", "uNormalMatrix",
 			"pointLight.position", "pointLight.color",
-			"material.ambient", "material.diffuse", "material.specular",
+			"material.albedo", "material.metallic", "material.roughness", "material.ao",
 			"dirLight.direction", "dirLight.color",
 			"sampler", "camPos",
 			"metallic", "roughness", "ao"
@@ -163,14 +163,15 @@ export function Canvas() {
 		
 		// Update default texture color
 		gl.bindTexture(gl.TEXTURE_2D, defaultTextureRef.current);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([Math.floor(255 * material.diffuse[0]), Math.floor(255 * material.diffuse[1]), Math.floor(255 * material.diffuse[2]), 255]));
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([Math.floor(255 * material.albedo[0]), Math.floor(255 * material.albedo[1]), Math.floor(255 * material.albedo[2]), 255]));
 		
 		// Update material uniforms
-		gl.uniform3fv(program.uniformLocations["material.ambient"], material.ambient);
-		gl.uniform3fv(program.uniformLocations["material.diffuse"], material.diffuse);
-		gl.uniform3fv(program.uniformLocations["material.specular"], material.specular);
+		gl.uniform3fv(program.uniformLocations["material.albedo"], material.albedo);
+		gl.uniform1f(program.uniformLocations["material.metallic"], material.metallic);
+		gl.uniform1f(program.uniformLocations["material.roughness"], material.roughness);
+		gl.uniform1f(program.uniformLocations["material.ao"], material.ao);
 
-	}, [material.ambient, material.diffuse, material.specular]);
+	}, [material.albedo, material.metallic, material.roughness, material.ao]);
 
 	// Triggered when directional light changes
 	useEffect(() => {

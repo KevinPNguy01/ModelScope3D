@@ -4,10 +4,10 @@ export const lightingSlice = createSlice({
     name: "lighting",
     initialState: {
         material: {
-            ambient: [0.05, 0.05, 0.05],
-            diffuse: [0.75, 0.75, 0.75],
-            specular: [0.25, 0.25, 0.25],
-            shininess: 32.0
+            albedo: [0.75, 0.75, 0.75],
+            metallic: 0.04,
+            roughness: 0.2,
+            ao: 0.05
         },
         dirLight: {
             direction: [-.1, -.1, -.1],
@@ -15,9 +15,6 @@ export const lightingSlice = createSlice({
         },
         pointLight: {
             position: [-1, 0, 0],
-            constant: 1.0,
-            linear: 0.7,
-            quadratic: 1.8,
             color: [0.9, 0.9, 0.9],
         }
     },
@@ -29,18 +26,15 @@ export const lightingSlice = createSlice({
                 if (Array.isArray(state.material[k])) {
                     state.material[k][index] = value;
                 } else {
-                    state.material[k as "shininess"] = value;
+                    state.material[k as "metallic" | "roughness" | "ao"] = value;
                 }
-            } else if (parentKey === "dirLight") {
+            }
+            else if (parentKey === "pointLight") {
+                const k = key as keyof typeof state.pointLight;
+                state.pointLight[k][index] = value;
+            } else {
                 const k = key as keyof typeof state.dirLight;
                 state.dirLight[k][index] = value;
-            } else {
-                const k = key as keyof typeof state.pointLight;
-                if (Array.isArray(state.pointLight[k])) {
-                    state.pointLight[k][index] = value;
-                } else {
-                    state.pointLight[k as "constant" | "linear" | "quadratic"] = value;
-                }
             }
         }
     }

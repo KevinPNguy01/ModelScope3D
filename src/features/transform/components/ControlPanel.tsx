@@ -56,23 +56,17 @@ export function ControlPanel() {
                 <TransformNumberInput value={rotation[2]} setValue={(val: number) => dispatch(setRotation({value: val, index: 2}))} title="Rotation Z" step={5} color="#0080ff"/>
             </div>
             <br/>
-            <span>Material Ambient</span>
+            <span>Material Color</span>
             <div className={`flex gap-1`}>
-                <TransformNumberInput value={material.ambient[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "ambient", index: 0, value: val}))} title="Material Ambient Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={material.ambient[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "ambient", index: 1, value: val}))} title="Material Ambient Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={material.ambient[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "ambient", index: 2, value: val}))} title="Material Ambient Blue Component" step={0.01} color="#0080ff"/>
+                <TransformNumberInput value={material.albedo[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "albedo", index: 0, value: val}))} title="Red Component" step={0.01} color="#ff0000"/>
+                <TransformNumberInput value={material.albedo[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "albedo", index: 1, value: val}))} title="Green Component" step={0.01} color="#00cc00"/>
+                <TransformNumberInput value={material.albedo[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "albedo", index: 2, value: val}))} title="Blue Component" step={0.01} color="#0080ff"/>
             </div>
-            <span>Material Diffuse</span>
+            <span>Material Properties</span>
             <div className={`flex gap-1`}>
-                <TransformNumberInput value={material.diffuse[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "diffuse", index: 0, value: val}))} title="Material Diffuse Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={material.diffuse[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "diffuse", index: 1, value: val}))} title="Material Diffuse Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={material.diffuse[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "diffuse", index: 2, value: val}))} title="Material Diffuse Blue Component" step={0.01} color="#0080ff"/>
-            </div>
-            <span>Material Specular</span>
-            <div className={`flex gap-1`}>
-                <TransformNumberInput value={material.specular[0]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "specular", index: 0, value: val}))} title="Material Specular Red Component" step={0.01} color="#ff0000"/>
-                <TransformNumberInput value={material.specular[1]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "specular", index: 1, value: val}))} title="Material Specular Green Component" step={0.01} color="#00cc00"/>
-                <TransformNumberInput value={material.specular[2]} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "specular", index: 2, value: val}))} title="Material Specular Blue Component" step={0.01} color="#0080ff"/>
+                <TransformNumberInput value={1-material.roughness} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "roughness", index: -1, value: 1-val}))} title="Smoothness" step={0.01} color="none"/>
+                <TransformNumberInput value={material.metallic} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "metallic", index: -1, value: val}))} title="Metalness" step={0.01} color="none"/>
+                <TransformNumberInput value={material.ao} setValue={(val: number) => dispatch(updateStructUniform({parentKey: "material", key: "ao", index: -1, value: val}))} title="Ambient Occlusion" step={0.01} color="none"/>
             </div>
             <br/>
             <span>Sunlight Direction</span>

@@ -61,10 +61,9 @@
 			precision highp float;
 
 			struct Material {
-				vec3 ambient;
-				vec3 diffuse;
-				vec3 specular;
-				float shininess;
+				float metallic;
+				float roughness;
+				float ao;
 			}; 
 
 			struct DirLight {
@@ -73,12 +72,7 @@
 			};
 
 			struct PointLight {    
-				vec3 position;
-				
-				float constant;
-				float linear;
-				float quadratic;  
-
+				vec3 position; 
 				vec3 color;
 			};  
 
@@ -89,10 +83,6 @@
 			uniform sampler2D sampler;
 
 			uniform vec3 camPos;
-
-			uniform float metallic;
-			uniform float roughness;
-			uniform float ao;
 
 			varying vec2 TexCoords;
 			varying vec3 WorldPos;
@@ -146,16 +136,16 @@
 				float attenuation = 1.0 / (distance * distance);
 				vec3 radiance = pointLight.color * attenuation;
 
-				float NDF = DistributionGGX(N, H, roughness);        
-				float G = GeometrySmith(N, V, L, roughness);
+				float NDF = DistributionGGX(N, H, material.roughness);        
+				float G = GeometrySmith(N, V, L, material.roughness);
 				
 				vec3 F0 = vec3(0.04); 
-    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, metallic);
+    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, material.metallic);
 				vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
 				vec3 kS = F;
 				vec3 kD = vec3(1.0) - kS;
-				kD *= 1.0 - metallic;
+				kD *= 1.0 - material.metallic;
 
 				vec3 numerator = NDF * G * F;
 				float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.01;
@@ -172,16 +162,16 @@
 
 				vec3 radiance = dirLight.color;
 
-				float NDF = DistributionGGX(N, H, roughness);        
-				float G = GeometrySmith(N, V, L, roughness);
+				float NDF = DistributionGGX(N, H, material.roughness);        
+				float G = GeometrySmith(N, V, L, material.roughness);
 				
 				vec3 F0 = vec3(0.04); 
-    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, metallic);
+    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, material.metallic);
 				vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
 				vec3 kS = F;
 				vec3 kD = vec3(1.0) - kS;
-				kD *= 1.0 - metallic;
+				kD *= 1.0 - material.metallic;
 
 				vec3 numerator = NDF * G * F;
 				float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.01;
@@ -199,7 +189,7 @@
 				vec3 Lo = calculatePointLight(N, V);
 				Lo += calculateDirectionalLight(N, V);
 
-				vec3 ambient = vec3(0.03) * texture2D(sampler, TexCoords).rgb * ao;
+				vec3 ambient = vec3(0.03) * texture2D(sampler, TexCoords).rgb * material.ao;
 				vec3 color = ambient + Lo;
 
 				color = color / (color + vec3(1.0));
