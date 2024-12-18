@@ -62,9 +62,9 @@ export function Canvas() {
 		if (gl === null) throw new Error("Unable to initialize WebGL. Your browser or machine may not support it.");
 		glRef.current = gl;
 
-		// Initialize default model (Stanford Bunny)
+		// Initialize default model
 		(async () => {
-			const file = await loadModelFileFromPublic("stanford_bunny.obj");
+			const file = await loadModelFileFromPublic("sphere.obj");
 			if (file === null) return;
 			if (file.type === "model/obj") {
 				setObjFile(file);
@@ -88,15 +88,16 @@ export function Canvas() {
 		gridAxisGuidesRef.current = new GridAxisGuides(gl, lineShader);
 
 		// Initialize shader program
-		const program = new ShaderProgram(gl, "triangles-vertex-shader", "triangles-fragment-shader");
+		const program = new ShaderProgram(gl, "pbr-vertex-shader", "pbr-fragment-shader");
 		programRef.current = program;
 		program.getAttribLocations(["aVertexPosition", "aVertexNormal", "aTextureCoord"]);
 		program.getUniformLocations([
 			"uModelMatrix", "uViewMatrix", "uProjectionMatrix", "uNormalMatrix",
-			"pointLight.position", "pointLight.constant", "pointLight.linear", "pointLight.quadratic", "pointLight.color",
-			"material.ambient", "material.diffuse", "material.specular", "material.shininess",
+			"pointLight.position", "pointLight.color",
+			"material.ambient", "material.diffuse", "material.specular",
 			"dirLight.direction", "dirLight.color",
-			"uSampler", "uCamPos"
+			"sampler", "camPos",
+			"metallic", "roughness", "ao"
 		]);
 		program.use();
 
@@ -105,10 +106,9 @@ export function Canvas() {
 		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMatrixRef.current);
 
 		// These uniforms might be configurable in the future, for now won't change.
-		gl.uniform1f(program.uniformLocations["pointLight.constant"], 1.0);
-		gl.uniform1f(program.uniformLocations["pointLight.linear"], 0.09);
-		gl.uniform1f(program.uniformLocations["pointLight.quadratic"], 0.032);
-		gl.uniform1f(program.uniformLocations["material.shininess"], 32.0);
+		gl.uniform1f(program.uniformLocations["metallic"], .2);
+		gl.uniform1f(program.uniformLocations["roughness"], 0.2);
+		gl.uniform1f(program.uniformLocations["ao"], 0.05);
 
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	}, [setObjFile, setStlFile])
@@ -193,7 +193,7 @@ export function Canvas() {
 		vec3.scale(cameraPos, cameraPos, dist);
 		calculateViewMatrix(viewMatrixRef.current, yaw+deltaYaw, pitch+deltaPitch, dist);
 		glRef.current!.uniformMatrix4fv(programRef.current.uniformLocations.uViewMatrix, false, viewMatrixRef.current);
-		glRef.current!.uniform3fv(programRef.current.uniformLocations.uCamPos, cameraPos);
+		glRef.current!.uniform3fv(programRef.current.uniformLocations.camPos, cameraPos);
 	}, [deltaYaw, yaw, pitch, deltaPitch, dist]);
 
 	// Update reverse scale vector when scale changes

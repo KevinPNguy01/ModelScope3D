@@ -35,7 +35,7 @@
 				gl_FragColor = vec4(vColor, 0.75);
 			}
 		</script>
-		<script id="triangles-vertex-shader" type="x-shader/x-vertex">
+		<script id="pbr-vertex-shader" type="x-shader/x-vertex">
 			uniform mat4 uModelMatrix;
 			uniform mat4 uViewMatrix;
 			uniform mat4 uProjectionMatrix;
@@ -45,20 +45,20 @@
 			attribute vec3 aVertexNormal;       // Vertex normal in object space
 			attribute vec2 aTextureCoord;
 
-			varying vec3 vFragPos;             	// Vertex position in world space
-			varying vec3 vNormal;               // Vertex normal in world space
-			varying vec2 vTextureCoord;
+			varying vec3 WorldPos;             	// Vertex position in world space
+			varying vec3 Normal;              	// Vertex normal in world space
+			varying vec2 TexCoords;
 
 			void main(void) {
-				vFragPos = vec3(uModelMatrix * vec4(aVertexPosition, 1.0));
-				vNormal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
-				vTextureCoord = aTextureCoord;
+				WorldPos = vec3(uModelMatrix * vec4(aVertexPosition, 1.0));
+				Normal = vec3(uNormalMatrix * vec4(aVertexNormal, 1.0));
+				TexCoords = aTextureCoord;
 
-				gl_Position = uProjectionMatrix * uViewMatrix * vec4(vFragPos, 1.0);
+				gl_Position = uProjectionMatrix * uViewMatrix * vec4(WorldPos, 1.0);
 			}
 		</script>
-		<script id="triangles-fragment-shader" type="x-shader/x-fragment">
-			precision mediump float;
+		<script id="pbr-fragment-shader" type="x-shader/x-fragment">
+			precision highp float;
 
 			struct Material {
 				vec3 ambient;
@@ -86,60 +86,125 @@
 			uniform Material material;
 			uniform DirLight dirLight;
 
-			uniform sampler2D uSampler;
-			uniform vec3 uCamPos;
+			uniform sampler2D sampler;
 
-			varying vec3 vFragPos;
-			varying vec3 vNormal;
-			varying highp vec2 vTextureCoord;
+			uniform vec3 camPos;
 
-			vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
-				vec3 lightDir = normalize(-light.direction);
-				vec3 halfwayDir = normalize(lightDir + viewDir);
-				// diffuse shading
-				float diff = max(dot(normal, lightDir), 0.0);
-				// specular shading
-				vec3 reflectDir = reflect(-lightDir, normal);
-    			float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-				// combine results
-				vec3 ambient  = light.color * material.ambient;
-				vec3 diffuse  = light.color * diff * texture2D(uSampler, vTextureCoord).rgb;
-				vec3 specular = light.color * spec * material.specular;
-				return (ambient + diffuse + specular);
+			uniform float metallic;
+			uniform float roughness;
+			uniform float ao;
+
+			varying vec2 TexCoords;
+			varying vec3 WorldPos;
+			varying vec3 Normal;
+
+			const float PI = 3.14159265359;
+
+			vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+				return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 			}
 
-			vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
-				vec3 lightDir = normalize(light.position - fragPos);
-				vec3 halfwayDir = normalize(lightDir + viewDir);
-				// diffuse shading
-				float diff = max(dot(normal, lightDir), 0.0);
-				// specular shading
-				float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-				// attenuation
-				float distance = length(light.position - fragPos);
-				float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
-				// combine results
-				vec3 ambient  = light.color * material.ambient;
-				vec3 diffuse  = light.color * diff * texture2D(uSampler, vTextureCoord).rgb;
-				vec3 specular = light.color * spec * material.specular;
-				ambient  *= attenuation;
-				diffuse  *= attenuation;
-				specular *= attenuation;
-				return (ambient + diffuse + specular);
-			} 
+			float DistributionGGX(vec3 N, vec3 H, float roughness){
+				float a      = roughness*roughness;
+				float a2     = a*a;
+				float NdotH  = max(dot(N, H), 0.0);
+				float NdotH2 = NdotH*NdotH;
+				
+				float num   = a2;
+				float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+				denom = PI * denom * denom;
+				
+				return num / denom;
+			}
+
+			float GeometrySchlickGGX(float NdotV, float roughness){
+				float r = (roughness + 1.0);
+				float k = (r*r) / 8.0;
+
+				float num   = NdotV;
+				float denom = NdotV * (1.0 - k) + k;
+				
+				return num / denom;
+			}
+
+			float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+			{
+				float NdotV = max(dot(N, V), 0.0);
+				float NdotL = max(dot(N, L), 0.0);
+				float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+				float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+				
+				return ggx1 * ggx2;
+			}
+
+			vec3 calculatePointLight(vec3 N, vec3 V) {
+				// Calculate light direction and halfway vector
+				vec3 L = normalize(pointLight.position - WorldPos);
+				vec3 H = normalize(V + L);
+
+				float distance = length(pointLight.position - WorldPos);
+				float attenuation = 1.0 / (distance * distance);
+				vec3 radiance = pointLight.color * attenuation;
+
+				float NDF = DistributionGGX(N, H, roughness);        
+				float G = GeometrySmith(N, V, L, roughness);
+				
+				vec3 F0 = vec3(0.04); 
+    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, metallic);
+				vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+				vec3 kS = F;
+				vec3 kD = vec3(1.0) - kS;
+				kD *= 1.0 - metallic;
+
+				vec3 numerator = NDF * G * F;
+				float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.01;
+				vec3 specular = numerator / denominator;
+
+				float NdotL = max(dot(N, L), 0.0);
+				return (kD * texture2D(sampler, TexCoords).rgb / PI + specular) * radiance * NdotL;
+			}
+
+			vec3 calculateDirectionalLight(vec3 N, vec3 V) {
+				// Calculate light direction and halfway vector
+				vec3 L = normalize(-dirLight.direction);
+				vec3 H = normalize(V + L);
+
+				vec3 radiance = dirLight.color;
+
+				float NDF = DistributionGGX(N, H, roughness);        
+				float G = GeometrySmith(N, V, L, roughness);
+				
+				vec3 F0 = vec3(0.04); 
+    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, metallic);
+				vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+				vec3 kS = F;
+				vec3 kD = vec3(1.0) - kS;
+				kD *= 1.0 - metallic;
+
+				vec3 numerator = NDF * G * F;
+				float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.01;
+				vec3 specular = numerator / denominator;
+
+				float NdotL = max(dot(N, L), 0.0);
+				return (kD * texture2D(sampler, TexCoords).rgb / PI + specular) * radiance * NdotL;
+			}
 
 			void main() {
-				vec3 norm = normalize(vNormal);
-				vec3 viewDir = normalize(uCamPos-vFragPos);
+				// Calculate normal and viewing directions
+				vec3 N = normalize(Normal);
+				vec3 V = normalize(camPos - WorldPos);
 
-				if (dot(norm, viewDir) < 0.0) {
-					norm = -norm;
-				}
+				vec3 Lo = calculatePointLight(N, V);
+				Lo += calculateDirectionalLight(N, V);
 
-				vec3 result = CalcDirLight(dirLight, norm, viewDir);
-				result += CalcPointLight(pointLight, norm, vFragPos, viewDir);    
-				
-				gl_FragColor = vec4(result, 1.0);
+				vec3 ambient = vec3(0.03) * texture2D(sampler, TexCoords).rgb * ao;
+				vec3 color = ambient + Lo;
+
+				color = color / (color + vec3(1.0));
+				color = pow(color, vec3(1.0/2.2)); 
+				gl_FragColor = vec4(color, 1.0);
 			}
 		</script>
 		<div id="root"></div>
