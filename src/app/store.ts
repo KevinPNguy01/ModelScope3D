@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import lightingReducer from "../stores/slices/lighting";
+import settingsReducer from "../stores/slices/settings";
 import transformationsReducer from "../stores/slices/transformations";
 
 const store =  configureStore({
     reducer: {
         transformations: transformationsReducer,
-        lighting: lightingReducer
+        lighting: lightingReducer,
+        settings: settingsReducer
     },
 })
 

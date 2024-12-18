@@ -3,7 +3,9 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
 import { FileContext } from "../../../app/contexts/FileContext";
+import { SceneMenu } from "../../../components/SceneMenu";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
+import { selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { ShaderProgram } from "../types/ShaderProgram";
 import { GridAxisGuides } from "../utils/GridAxisGuides";
@@ -37,6 +39,10 @@ export function Canvas() {
 	const material = useSelector(selectMaterial);
 	const dirLight = useSelector(selectDirLight);
 	const pointLight = useSelector(selectPointLight);
+
+	// Selectors for whether to render grid/axes
+	const showAxes = useSelector(selectShowAxes);
+    const showGrids = useSelector(selectShowGrids);
 
 	// State hooks for keeping track of camera rotation and position
 	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
@@ -137,24 +143,29 @@ export function Canvas() {
 			const modelViewProjectionMatrix = mat4.create();
 
 			// Render grid lines
-			mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
-			glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
-			drawGridGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+			if (showGrids) {
+				mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
+				glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
+				drawGridGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+			}
+			
 
 			// Render model axis lines
-			mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
-			mat4.mul(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrixRef.current);
-			mat4.scale(modelViewProjectionMatrix, modelViewProjectionMatrix, reverseScaleRef.current);
-			glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
-			if (meshesRef.current.length) 
-				drawAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+			if (showAxes) {
+				mat4.mul(modelViewProjectionMatrix, projectionMatrixRef.current, viewMatrixRef.current);
+				mat4.mul(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrixRef.current);
+				mat4.scale(modelViewProjectionMatrix, modelViewProjectionMatrix, reverseScaleRef.current);
+				glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
+				if (meshesRef.current.length) 
+					drawAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
+			}
 
 			programRef.current.use();
 			animationFrame.number = requestAnimationFrame(render);
 		}
 		animationFrame.number = requestAnimationFrame(render);
 		return () => cancelAnimationFrame(animationFrame.number);
-	}, [animationFrame]);
+	}, [animationFrame, showAxes, showGrids]);
 
 	// Triggered when material properties change
 	useEffect(() => {
@@ -240,17 +251,21 @@ export function Canvas() {
 	}, [deltaPitch, deltaYaw, pitch, yaw]);
 
 	return (
-		<canvas 
-			ref={canvasRef} 
-			id="gl-canvas" 
-			width="800" 
-			height="500"
-			onMouseDown={(e) => {
-				mouseStartPos.current = e;
-			}}
-			onWheel={(e) => {
-				setDist(Math.max(0.1, dist + 0.1 * e.deltaY / Math.abs(e.deltaY)));
-			}}
-		/>
+		<div className="relative">
+			<canvas 
+				ref={canvasRef} 
+				id="gl-canvas" 
+				width="800" 
+				height="600"
+				onMouseDown={(e) => {
+					mouseStartPos.current = e;
+				}}
+				onWheel={(e) => {
+					setDist(Math.max(0.1, dist + 0.1 * e.deltaY / Math.abs(e.deltaY)));
+				}}
+			/>
+			<SceneMenu/>
+		</div>
+		
 	);
 }
