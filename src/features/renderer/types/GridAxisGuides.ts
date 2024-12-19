@@ -1,4 +1,4 @@
-import { ShaderProgram } from "../types/ShaderProgram";
+import { ShaderProgram } from "./ShaderProgram";
 
 export class GridAxisGuides {
     gridPointsBuffer: WebGLBuffer | null;

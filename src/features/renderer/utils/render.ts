@@ -1,6 +1,6 @@
 import { MeshWithBuffers } from "webgl-obj-loader";
+import { GridAxisGuides } from "../types/GridAxisGuides";
 import { ShaderProgram } from "../types/ShaderProgram";
-import { GridAxisGuides } from "./GridAxisGuides";
 import { MtlWithTextures } from "./mtl";
 
 export function drawScene(gl: WebGLRenderingContext, program: ShaderProgram, meshes: MeshWithBuffers[], mtl: MtlWithTextures, defaultTexture: WebGLTexture | null) {

@@ -36,11 +36,7 @@ export function calculateModelMatrix(out: mat4, position: number[], scale: numbe
  * @param pitch Pitch (vertical rotation) of the camera
  * @param dist Distance from the origin
  */
-export function calculateViewMatrix(out: mat4, yaw: number, pitch: number, dist: number) {
-    const yawAngle = -Math.PI / 180 * yaw;
-    const pitchAngle = Math.PI / 180 * Math.max(-90, Math.min(90, pitch));
-    const cameraPos = vec3.fromValues(Math.cos(pitchAngle) * Math.sin(yawAngle), Math.sin(pitchAngle), Math.cos(pitchAngle) * Math.cos(yawAngle));
-    vec3.scale(cameraPos, cameraPos, dist);
+export function calculateViewMatrix(out: mat4, cameraPos: vec3) {
     mat4.lookAt(out, cameraPos, [0, 0, 0], [0, 1, 0]);
 }
 
@@ -66,4 +62,19 @@ export function calculateProjectionMatrix(out: mat4, canvas: HTMLCanvasElement, 
 export function calculateNormalMatrix(out: mat4, modelViewMatrix: mat4) {
     mat4_inverse(modelViewMatrix, out);
     mat4.transpose(out, out);
+}
+
+/**
+ * Calculates the camera position given the rotation angles and distance from the origin.
+ * @param yaw Yaw (horizontal rotation) of the camera
+ * @param pitch Pitch (vertical rotation) of the camera
+ * @param dist Distance from the origin
+ * @returns A new vec3 as the camera position
+ */
+export function calculateCameraPosition(yaw: number, pitch: number, dist: number) {
+    const yawAngle = -Math.PI / 180 * yaw;
+    const pitchAngle = Math.PI / 180 * Math.max(-90, Math.min(90, pitch));
+    const cameraPos = vec3.fromValues(Math.cos(pitchAngle) * Math.sin(yawAngle), Math.sin(pitchAngle), Math.cos(pitchAngle) * Math.cos(yawAngle));
+    vec3.scale(cameraPos, cameraPos, dist);
+    return cameraPos;
 }
