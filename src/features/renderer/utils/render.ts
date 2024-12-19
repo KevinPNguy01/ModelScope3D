@@ -1,5 +1,6 @@
+import { mat4, vec3 } from "gl-matrix";
 import { MeshWithBuffers } from "webgl-obj-loader";
-import { GridAxisGuides } from "../types/GridAxisGuides";
+import { LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
 import { MtlWithTextures } from "./mtl";
 
@@ -30,36 +31,22 @@ export function drawScene(gl: WebGLRenderingContext, program: ShaderProgram, mes
     }
 }
 
-export function drawGridGuides(gl: WebGLRenderingContext, lineShader: ShaderProgram, gridAxisGuides: GridAxisGuides) {
+export function drawLines(gl: WebGLRenderingContext, lineShader: ShaderProgram, modelMat: mat4, scale: vec3, gridGuides: LineMesh, disableDepth: boolean) {
     lineShader.use();
+
+    gl.uniformMatrix4fv(lineShader.uniformLocations.uModel, false, modelMat);
+    gl.uniform3fv(lineShader.uniformLocations.uScale, scale);
 
     gl.enableVertexAttribArray(lineShader.attribLocations.aPosition);
     gl.enableVertexAttribArray(lineShader.attribLocations.aColor);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, gridAxisGuides.gridPointsBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gridGuides.pointsBuffer);
     gl.vertexAttribPointer(lineShader.attribLocations.aPosition, 3, gl.FLOAT, false, 0, 0);
         
-    gl.bindBuffer(gl.ARRAY_BUFFER, gridAxisGuides.gridColorsBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gridGuides.colorBuffer);
     gl.vertexAttribPointer(lineShader.attribLocations.aColor, 3, gl.FLOAT, false, 0, 0);
 
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    if (disableDepth) gl.disable(gl.DEPTH_TEST);
     gl.drawArrays(gl.LINES, 0, 100);
-}
-
-export function drawAxisGuides(gl: WebGLRenderingContext, lineShader: ShaderProgram, gridAxisGuides: GridAxisGuides) {
-    lineShader.use();
-
-    gl.enableVertexAttribArray(lineShader.attribLocations.aPosition);
-    gl.enableVertexAttribArray(lineShader.attribLocations.aColor);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, gridAxisGuides.axisPointsBuffer);
-    gl.vertexAttribPointer(lineShader.attribLocations.aPosition, 3, gl.FLOAT, false, 0, 0);
-        
-    gl.bindBuffer(gl.ARRAY_BUFFER, gridAxisGuides.axisColorsBuffer);
-    gl.vertexAttribPointer(lineShader.attribLocations.aColor, 3, gl.FLOAT, false, 0, 0);
-    
-    gl.disable(gl.DEPTH_TEST);
-    gl.drawArrays(gl.LINES, 0, 6);
     gl.enable(gl.DEPTH_TEST);
 }

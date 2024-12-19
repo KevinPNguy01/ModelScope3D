@@ -33,34 +33,37 @@ export function updatePointLight(gl: WebGLRenderingContext, program: ShaderProgr
     gl.uniform3fv(program.uniformLocations["pointLight.color"], pointLight.color);
 }
 
-export function updateCameraAndView(gl: WebGLRenderingContext, program: ShaderProgram, viewMatrix: mat4, yaw: number, pitch: number, dist: number) {
-    program.use();
-
+export function updateCameraAndView(gl: WebGLRenderingContext, pbrShader: ShaderProgram, lineShader: ShaderProgram, viewMatrix: mat4, yaw: number, pitch: number, dist: number) {
     // Calculate camera position and view matrix
     const cameraPos = calculateCameraPosition(yaw, pitch , dist);
     calculateViewMatrix(viewMatrix, cameraPos);
 
-    // Update camera position and view matrix uniforms
-    gl.uniform3fv(program.uniformLocations.camPos, cameraPos);
-    gl.uniformMatrix4fv(program.uniformLocations.uViewMatrix, false, viewMatrix);
+    // Update camera position and view matrix uniforms for pbr shader
+    pbrShader.use();
+    gl.uniform3fv(pbrShader.uniformLocations.camPos, cameraPos);
+    gl.uniformMatrix4fv(pbrShader.uniformLocations.uViewMatrix, false, viewMatrix);
+
+    // Update view matrix uniform for line shader
+    lineShader.use();
+    gl.uniformMatrix4fv(lineShader.uniformLocations.uView, false, viewMatrix);
 }
 
 export function updateModelAndNormal(
-    gl: WebGLRenderingContext, program: ShaderProgram, modelMatrix: mat4, normalMatrix: mat4, 
+    gl: WebGLRenderingContext, pbrShader: ShaderProgram, modelMatrix: mat4, normalMatrix: mat4, 
     position: number[], scale: number[], rotation: number[]
 ) {
-    program.use();
-
     // Calculate model matrix and normal matrix;
     calculateModelMatrix(modelMatrix, position, scale, rotation);
     calculateNormalMatrix(normalMatrix, modelMatrix);
 
-    // Update uniforms
-    gl.uniformMatrix4fv(program.uniformLocations.uModelMatrix, false, modelMatrix);
-    gl.uniformMatrix4fv(program.uniformLocations.uNormalMatrix, false, normalMatrix);
+    // Update model matrix and normal matrix uniforms for pbrShader
+    pbrShader.use();
+    gl.uniformMatrix4fv(pbrShader.uniformLocations.uModelMatrix, false, modelMatrix);
+    gl.uniformMatrix4fv(pbrShader.uniformLocations.uNormalMatrix, false, normalMatrix);
 }
 
-export function updateInverseScale(inverseScale: vec3, scale: number[], dist: number,) {
+export function updateInverseScale(inverseScale: vec3, scale: number[], dist: number) {
+    // Calculate inverse scale to keep axis lines constant size
     vec3.set(inverseScale, scale[0], scale[1], scale[2]);
     vec3.scale(inverseScale, inverseScale, scale[3]);
     vec3.scale(inverseScale, inverseScale, 1/dist)

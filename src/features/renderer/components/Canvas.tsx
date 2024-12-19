@@ -7,12 +7,12 @@ import { SceneMenu } from "../../../components/SceneMenu";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
 import { selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
-import { GridAxisGuides } from "../types/GridAxisGuides";
+import { AxisLinesMesh, GridLinesMesh, LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
 import { addCanvasMouseHandlers, canvasOnMouseDown, canvasOnWheel } from "../utils/event_listeners";
 import { loadModelFileFromPublic, loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
-import { drawAxisGuides, drawGridGuides, drawScene } from "../utils/render";
+import { drawLines, drawScene } from "../utils/render";
 import { calculateProjectionMatrix } from "../utils/transform_matrices";
 import { updateCameraAndView, updateDirectionalLight, updateInverseScale, updateMaterial, updateModelAndNormal, updatePointLight } from "../utils/useeffect_functions";
 
@@ -21,12 +21,13 @@ export function Canvas() {
 
 	const glRef = useRef<WebGLRenderingContext>(null as unknown as WebGLRenderingContext);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const programRef = useRef<ShaderProgram>({} as ShaderProgram);
-	const lineShaderRef = useRef<ShaderProgram>({} as ShaderProgram);
+	const pbrShader = useRef<ShaderProgram>({} as ShaderProgram);
+	const lineShader = useRef<ShaderProgram>({} as ShaderProgram);
 	const meshesRef = useRef<MeshWithBuffers[]>([]);
 	const mtlRef = useRef<MtlWithTextures>();
 	const defaultTextureRef = useRef<WebGLTexture | null>(null);
-	const gridAxisGuidesRef = useRef<GridAxisGuides>({} as GridAxisGuides);
+	const gridGuides = useRef<LineMesh>({} as LineMesh);
+	const axisGuides = useRef<LineMesh>({} as LineMesh);
 
 	// Keep track of frame number to cancel in case of re-render.
 	const animationFrame = useRef(0);
@@ -54,10 +55,10 @@ export function Canvas() {
 	const [dist, setDist] = useState(2);
 
 	// Transformation matrices
-	const modelMatrix = useRef(mat4.create());
-	const viewMatrix = useRef(mat4.create());
-	const projectionMatrix = useRef(mat4.create());
-	const normalMatrix = useRef(mat4.create());
+	const modelMat = useRef(mat4.create());
+	const viewMat = useRef(mat4.create());
+	const projectionMat = useRef(mat4.create());
+	const normalMat = useRef(mat4.create());
 	
 	// Reverse scale vector for axis guides
 	const inverseScale = useRef(vec3.create());
@@ -87,16 +88,21 @@ export function Canvas() {
 		mtlRef.current = initMtlTextures(gl, new Mtl(""));
 		defaultTextureRef.current = gl.createTexture();
 
+		// Initialize projection matrix
+		calculateProjectionMatrix(projectionMat.current, canvas, 90, 0.00001, 1000);
+
 		// Initialize line shader program
-		const lineShader = new ShaderProgram(gl, "lines-vertex-shader", "lines-fragment-shader");
-		lineShaderRef.current = lineShader;
-		lineShader.getAttribLocations(["aPosition", "aColor"]);
-		lineShader.getUniformLocations(["uModelViewProjectionMatrix"]);
-		gridAxisGuidesRef.current = new GridAxisGuides(gl, lineShader);
+		lineShader.current = new ShaderProgram(gl, "lines-vertex-shader", "lines-fragment-shader");
+		lineShader.current.getAttribLocations(["aPosition", "aColor"]);
+		lineShader.current.getUniformLocations(["uModel", "uView", "uProjection", "uScale"]);
+		gridGuides.current = GridLinesMesh(gl, lineShader.current);
+		axisGuides.current = AxisLinesMesh(gl, lineShader.current);
+		lineShader.current.use();
+		gl.uniformMatrix4fv(lineShader.current.uniformLocations.uProjection, false, projectionMat.current);
 
 		// Initialize shader program
 		const program = new ShaderProgram(gl, "pbr-vertex-shader", "pbr-fragment-shader");
-		programRef.current = program;
+		pbrShader.current = program;
 		program.getAttribLocations(["aVertexPosition", "aVertexNormal", "aTextureCoord"]);
 		program.getUniformLocations([
 			"uModelMatrix", "uViewMatrix", "uProjectionMatrix", "uNormalMatrix",
@@ -107,10 +113,7 @@ export function Canvas() {
 			"metallic", "roughness", "ao"
 		]);
 		program.use();
-
-		// Initialize projection matrix
-		calculateProjectionMatrix(projectionMatrix.current, canvas, 90, 0.00001, 1000);
-		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMatrix.current);
+		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMat.current);
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	}, [setObjFile, setStlFile])
 
@@ -126,29 +129,10 @@ export function Canvas() {
 			gl.depthFunc(gl.LEQUAL);
 			gl.enable(gl.DEPTH_TEST);
 
-			// Render model
-			drawScene(glRef.current, programRef.current, meshesRef.current, mtlRef.current!, defaultTextureRef.current);
+			drawScene(glRef.current, pbrShader.current, meshesRef.current, mtlRef.current!, defaultTextureRef.current);
+			if (showGrids) drawLines(glRef.current, lineShader.current, mat4.create(), vec3.fromValues(1, 1, 1), gridGuides.current, false);
+			if (showAxes && meshesRef.current.length) drawLines(glRef.current, lineShader.current, modelMat.current, inverseScale.current, axisGuides.current, true);
 
-			lineShaderRef.current.use();
-			const modelViewProjectionMatrix = mat4.create();
-
-			// Render grid lines
-			if (showGrids) {
-				mat4.mul(modelViewProjectionMatrix, projectionMatrix.current, viewMatrix.current);
-				glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
-				drawGridGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
-			}
-			
-			// Render model axis lines
-			if (showAxes && meshesRef.current.length) {
-				mat4.mul(modelViewProjectionMatrix, projectionMatrix.current, viewMatrix.current);
-				mat4.mul(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix.current);
-				mat4.scale(modelViewProjectionMatrix, modelViewProjectionMatrix, inverseScale.current);
-				glRef.current!.uniformMatrix4fv(lineShaderRef.current.uniformLocations.uModelViewProjectionMatrix, false, modelViewProjectionMatrix);
-				drawAxisGuides(glRef.current!, lineShaderRef.current, gridAxisGuidesRef.current);
-			}
-
-			programRef.current.use();
 			animationFrame.current = requestAnimationFrame(render);
 		}
 		animationFrame.current = requestAnimationFrame(render);
@@ -161,11 +145,11 @@ export function Canvas() {
 	useEffect(() => {(async () => {if (mtlFile) mtlRef.current = await loadMtlFile(glRef.current, mtlFile)})()}, [mtlFile]);
 
 	// Update uniforms when control scene parameters change
-	useEffect(() => updateMaterial(glRef.current, programRef.current, material, defaultTextureRef.current), [material]);
-	useEffect(() => updateDirectionalLight(glRef.current, programRef.current, dirLight), [dirLight]);
-	useEffect(() => updatePointLight(glRef.current, programRef.current, pointLight), [pointLight]);
-	useEffect(() => updateCameraAndView(glRef.current, programRef.current, viewMatrix.current, yaw+dYaw, pitch+dPitch, dist), [yaw, dYaw, pitch, dPitch, dist]);
-	useEffect(() => updateModelAndNormal(glRef.current, programRef.current, modelMatrix.current, normalMatrix.current, position, scale, rotation), [position, scale, rotation]);
+	useEffect(() => updateMaterial(glRef.current, pbrShader.current, material, defaultTextureRef.current), [material]);
+	useEffect(() => updateDirectionalLight(glRef.current, pbrShader.current, dirLight), [dirLight]);
+	useEffect(() => updatePointLight(glRef.current, pbrShader.current, pointLight), [pointLight]);
+	useEffect(() => updateCameraAndView(glRef.current, pbrShader.current, lineShader.current, viewMat.current, yaw+dYaw, pitch+dPitch, dist), [yaw, dYaw, pitch, dPitch, dist]);
+	useEffect(() => updateModelAndNormal(glRef.current, pbrShader.current, modelMat.current, normalMat.current, position, scale, rotation), [position, scale, rotation]);
 	useEffect(() => updateInverseScale(inverseScale.current, scale, dist), [scale, dist]);
 
 	// Add mouse event listeners for the canvas
