@@ -1,18 +1,23 @@
 import BiotechIcon from '@mui/icons-material/Biotech';
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ExportMenu } from '../../components/ExportMenu';
 import { SceneMenu } from '../../components/SceneMenu';
 import { ImportButton } from "../../features/import_menu/components/ImportButton";
 import { Canvas } from "../../features/renderer/components/Canvas";
 import { ControlPanel } from "../../features/transform/components/ControlPanel";
 import { FileContext } from "../contexts/FileContext";
+import { ScreenshotContext } from '../contexts/ScreenshotContext';
 
 export function WebApp() {
     const [objFile, setObjFile] = useState<File | null>(null);
     const [mtlFile, setMtlFile] = useState<File | null>(null);
     const [stlFile, setStlFile] = useState<File | null>(null);
 
+    const screenshotRef = useRef(false);
+
     return (
         <FileContext.Provider value={{objFile, setObjFile, mtlFile, setMtlFile, stlFile, setStlFile}}>
+        <ScreenshotContext.Provider value={screenshotRef}>
             <div className="w-full h-screen flex flex-col overflow-hidden">
                 <header className="flex bg-secondary items-center flex-shrink">
                     <div className="flex items-center select-none px-2">
@@ -20,6 +25,7 @@ export function WebApp() {
                         <h2 className="text-white text-lg font-semibold">ModelScope</h2>
                     </div>
                     <ImportButton/>
+                    <ExportMenu/>
                     <SceneMenu/>
                 </header>
                 <main className="flex flex-grow overflow-hidden">
@@ -27,6 +33,7 @@ export function WebApp() {
                     <ControlPanel/>
                 </main>
             </div>
+        </ScreenshotContext.Provider>
         </FileContext.Provider>
     );
 }

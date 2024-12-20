@@ -3,6 +3,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
 import { FileContext } from "../../../app/contexts/FileContext";
+import { ScreenshotContext } from "../../../app/contexts/ScreenshotContext";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
 import { selectFov, selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
@@ -12,6 +13,7 @@ import { addCanvasMouseHandlers, addCanvasResizeHandler, canvasOnMouseDown, canv
 import { loadModelFileFromPublic, loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
 import { drawLines, drawScene } from "../utils/render";
+import { takeScreenshot } from "../utils/screenshot";
 import { updateCameraAndView, updateDirectionalLight, updateInverseScale, updateMaterial, updateModelAndNormal, updatePointLight, updateProjection } from "../utils/useeffect_functions";
 
 export function Canvas() {
@@ -26,6 +28,9 @@ export function Canvas() {
 	const defaultTextureRef = useRef<WebGLTexture | null>(null);
 	const gridGuides = useRef<LineMesh>({} as LineMesh);
 	const axisGuides = useRef<LineMesh>({} as LineMesh);
+
+	// Flag for whether to screenshot
+	const screenshot = useContext(ScreenshotContext);
 
 	// Keep track of frame number to cancel in case of re-render.
 	const animationFrame = useRef(0);
@@ -124,7 +129,7 @@ export function Canvas() {
 			const gl = glRef.current!;
 
 			// Clear canvas
-			gl.clearColor(.235, .235, .235, 1);
+			gl.clearColor(.235, .235, .235, screenshot.current ? 0 : 1);
 			gl.clearDepth(1);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			gl.depthFunc(gl.LEQUAL);
@@ -134,11 +139,12 @@ export function Canvas() {
 			if (showGrids) drawLines(glRef.current, lineShader.current, mat4.create(), vec3.fromValues(1, 1, 1), gridGuides.current, false);
 			if (showAxes && meshesRef.current.length) drawLines(glRef.current, lineShader.current, modelMat.current, inverseScale.current, axisGuides.current, true);
 
+			if (screenshot.current) takeScreenshot(canvasRef.current!, screenshot);
 			animationFrame.current = requestAnimationFrame(render);
 		}
 		animationFrame.current = requestAnimationFrame(render);
 		return () => cancelAnimationFrame(animationFrame.current);
-	}, [showAxes, showGrids]);
+	}, [screenshot, showAxes, showGrids]);
 
 	// Update meshes/mtl when imported files change
 	useEffect(() => {(async () => {if (stlFile) meshesRef.current = await loadSTLModel(glRef.current, stlFile)})()}, [stlFile]);
