@@ -5,11 +5,11 @@ const initialState = {
         albedo: [0.75, 0.75, 0.75],
         metallic: 0.04,
         roughness: 0.2,
-        ao: 0.05
+        ao: 20
     },
     dirLight: {
         direction: [-.1, -.1, -.1],
-        color: [0.9, 0.9, 0.9],
+        color: [1.5, 1.5, 1.5],
     },
     pointLight: {
         position: [-1, 0, 0],

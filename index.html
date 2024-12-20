@@ -130,7 +130,7 @@
 				return ggx1 * ggx2;
 			}
 
-			vec3 calculatePointLight(vec3 N, vec3 V) {
+			vec3 calculatePointLight(vec3 N, vec3 V, vec3 texColor) {
 				// Calculate light direction and halfway vector
 				vec3 L = normalize(pointLight.position - WorldPos);
 				vec3 H = normalize(V + L);
@@ -143,7 +143,7 @@
 				float G = GeometrySmith(N, V, L, material.roughness);
 				
 				vec3 F0 = vec3(0.04); 
-    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, material.metallic);
+    			F0 = mix(F0, texColor, material.metallic);
 				vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
 				vec3 kS = F;
@@ -155,10 +155,10 @@
 				vec3 specular = numerator / denominator;
 
 				float NdotL = max(dot(N, L), 0.0);
-				return (kD * texture2D(sampler, TexCoords).rgb / PI + specular) * radiance * NdotL;
+				return (kD * texColor / PI + specular) * radiance * NdotL;
 			}
 
-			vec3 calculateDirectionalLight(vec3 N, vec3 V) {
+			vec3 calculateDirectionalLight(vec3 N, vec3 V, vec3 texColor) {
 				// Calculate light direction and halfway vector
 				vec3 L = normalize(-dirLight.direction);
 				vec3 H = normalize(V + L);
@@ -169,7 +169,7 @@
 				float G = GeometrySmith(N, V, L, material.roughness);
 				
 				vec3 F0 = vec3(0.04); 
-    			F0 = mix(F0, texture2D(sampler, TexCoords).rgb, material.metallic);
+    			F0 = mix(F0, texColor, material.metallic);
 				vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
 				vec3 kS = F;
@@ -181,7 +181,7 @@
 				vec3 specular = numerator / denominator;
 
 				float NdotL = max(dot(N, L), 0.0);
-				return (kD * texture2D(sampler, TexCoords).rgb / PI + specular) * radiance * NdotL;
+				return (kD * texColor / PI + specular) * radiance * NdotL;
 			}
 
 			void main() {
@@ -193,15 +193,14 @@
 					N = -N;
 				}
 
-				vec3 Lo = calculatePointLight(N, V);
-				Lo += calculateDirectionalLight(N, V);
+				vec4 texColor = texture2D(sampler, TexCoords);
+				vec3 Lo = calculatePointLight(N, V, texColor.rgb);
+				Lo += calculateDirectionalLight(N, V, texColor.rgb);
 
-				vec3 ambient = vec3(0.03) * texture2D(sampler, TexCoords).rgb * material.ao;
+				vec3 ambient = vec3(0.03) * texColor.rgb * material.ao;
 				vec3 color = ambient + Lo;
 
-				color = color / (color + vec3(1.0));
-				color = pow(color, vec3(1.0/2.2)); 
-				gl_FragColor = vec4(color, 1.0);
+				gl_FragColor = vec4(color, texColor.a);
 			}
 		</script>
 		<div id="root"></div>

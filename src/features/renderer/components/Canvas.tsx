@@ -74,7 +74,7 @@ export function Canvas() {
 
 		// Initialize default model
 		(async () => {
-			const file = await loadModelFileFromPublic("stanford_bunny.obj");
+			const file = await loadModelFileFromPublic("fox.obj");
 			if (file === null) return;
 			if (file.type === "model/obj") {
 				setObjFile(file);
@@ -112,6 +112,8 @@ export function Canvas() {
 		]);
 		program.use();
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 	}, [setObjFile, setStlFile])
 
 	// Start the render loop

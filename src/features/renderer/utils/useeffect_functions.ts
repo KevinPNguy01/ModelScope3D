@@ -72,7 +72,6 @@ export function updateProjection(
     // Calculate projection matrix
     calculateProjectionMatrix(projectionMatrix, canvas, 90, 0.001, Infinity);
     gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
-    console.log(canvas)
 
     // Update projection matrix uniform for pbr shader
     pbrShader.use();
