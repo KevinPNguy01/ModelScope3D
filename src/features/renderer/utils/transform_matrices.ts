@@ -48,7 +48,7 @@ export function calculateViewMatrix(out: mat4, cameraPos: vec3) {
  * @param near Near bound of the frustum
  * @param far Far bound of the frustum, can be null or Infinity
  */
-export function calculateProjectionMatrix(out: mat4, canvas: HTMLCanvasElement, fov: number, near: number, far: number) {
+export function calculateProjectionMatrix(out: mat4, canvas: {clientWidth: number, clientHeight: number}, fov: number, near: number, far: number) {
     const fovy = (fov * Math.PI) / 180;
     const aspect =  canvas.clientWidth / canvas.clientHeight;
     mat4.perspective(out, fovy, aspect, near, far);

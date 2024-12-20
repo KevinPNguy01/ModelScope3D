@@ -9,12 +9,11 @@ import { selectShowAxes, selectShowGrids } from "../../../stores/selectors/setti
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { AxisLinesMesh, GridLinesMesh, LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
-import { addCanvasMouseHandlers, canvasOnMouseDown, canvasOnWheel } from "../utils/event_listeners";
+import { addCanvasMouseHandlers, addCanvasResizeHandler, canvasOnMouseDown, canvasOnWheel } from "../utils/event_listeners";
 import { loadModelFileFromPublic, loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
 import { drawLines, drawScene } from "../utils/render";
-import { calculateProjectionMatrix } from "../utils/transform_matrices";
-import { updateCameraAndView, updateDirectionalLight, updateInverseScale, updateMaterial, updateModelAndNormal, updatePointLight } from "../utils/useeffect_functions";
+import { updateCameraAndView, updateDirectionalLight, updateInverseScale, updateMaterial, updateModelAndNormal, updatePointLight, updateProjection } from "../utils/useeffect_functions";
 
 export function Canvas() {
 	const {objFile, mtlFile, stlFile, setObjFile, setStlFile} = useContext(FileContext);
@@ -54,6 +53,9 @@ export function Canvas() {
 	const [dPitch, setDPitch] = useState(0);
 	const [dist, setDist] = useState(2);
 
+	// State hook for keeping track of canvas size
+	const [canvasSize, setCanvasSize] = useState({clientWidth: 800, clientHeight: 600});
+
 	// Transformation matrices
 	const modelMat = useRef(mat4.create());
 	const viewMat = useRef(mat4.create());
@@ -88,9 +90,6 @@ export function Canvas() {
 		mtlRef.current = initMtlTextures(gl, new Mtl(""));
 		defaultTextureRef.current = gl.createTexture();
 
-		// Initialize projection matrix
-		calculateProjectionMatrix(projectionMat.current, canvas, 90, 0.00001, 1000);
-
 		// Initialize line shader program
 		lineShader.current = new ShaderProgram(gl, "lines-vertex-shader", "lines-fragment-shader");
 		lineShader.current.getAttribLocations(["aPosition", "aColor"]);
@@ -98,7 +97,6 @@ export function Canvas() {
 		gridGuides.current = GridLinesMesh(gl, lineShader.current);
 		axisGuides.current = AxisLinesMesh(gl, lineShader.current);
 		lineShader.current.use();
-		gl.uniformMatrix4fv(lineShader.current.uniformLocations.uProjection, false, projectionMat.current);
 
 		// Initialize shader program
 		const program = new ShaderProgram(gl, "pbr-vertex-shader", "pbr-fragment-shader");
@@ -113,7 +111,6 @@ export function Canvas() {
 			"metallic", "roughness", "ao"
 		]);
 		program.use();
-		gl.uniformMatrix4fv(program.uniformLocations.uProjectionMatrix, false, projectionMat.current);
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	}, [setObjFile, setStlFile])
 
@@ -148,20 +145,23 @@ export function Canvas() {
 	useEffect(() => updateMaterial(glRef.current, pbrShader.current, material, defaultTextureRef.current), [material]);
 	useEffect(() => updateDirectionalLight(glRef.current, pbrShader.current, dirLight), [dirLight]);
 	useEffect(() => updatePointLight(glRef.current, pbrShader.current, pointLight), [pointLight]);
+	useEffect(() => updateProjection(glRef.current, pbrShader.current, lineShader.current, projectionMat.current, canvasSize), [canvasSize])
 	useEffect(() => updateCameraAndView(glRef.current, pbrShader.current, lineShader.current, viewMat.current, yaw+dYaw, pitch+dPitch, dist), [yaw, dYaw, pitch, dPitch, dist]);
 	useEffect(() => updateModelAndNormal(glRef.current, pbrShader.current, modelMat.current, normalMat.current, position, scale, rotation), [position, scale, rotation]);
 	useEffect(() => updateInverseScale(inverseScale.current, scale, dist), [scale, dist]);
 
-	// Add mouse event listeners for the canvas
+	// Add event listeners for the canvas
 	useEffect(() => addCanvasMouseHandlers(mouseStartPos, yaw, dYaw, pitch, dPitch, setYaw, setDYaw, setPitch, setDPitch), [yaw, dYaw, pitch, dPitch]);
+	useEffect(() => addCanvasResizeHandler(canvasRef, setCanvasSize), []);
 
 	return (
-		<div className="relative">
+		<div className="relative flex flex-grow">
 			<canvas 
+				className="w-full h-full"
 				ref={canvasRef} 
 				id="gl-canvas" 
-				width="800" 
-				height="600"
+				width="0" 
+				height="0"
 				onMouseDown={canvasOnMouseDown(mouseStartPos)}
 				onWheel={canvasOnWheel(dist, setDist)}
 			/>

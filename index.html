@@ -189,6 +189,10 @@
 				vec3 N = normalize(Normal);
 				vec3 V = normalize(camPos - WorldPos);
 
+				if (dot(N, V) < 0.0) {
+					N = -N;
+				}
+
 				vec3 Lo = calculatePointLight(N, V);
 				Lo += calculateDirectionalLight(N, V);
 

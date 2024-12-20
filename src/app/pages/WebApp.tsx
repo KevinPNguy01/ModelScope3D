@@ -11,14 +11,14 @@ export function WebApp() {
 
     return (
         <FileContext.Provider value={{objFile, setObjFile, mtlFile, setMtlFile, stlFile, setStlFile}}>
-            <div className="flex flex-col">
-            <div className="flex bg-secondary">
-                <ImportButton/>
-            </div>
-            <div className="flex">
-                <Canvas/>
-                <ControlPanel/>
-            </div>
+            <div className="w-full h-screen flex flex-col overflow-hidden">
+                <header className="flex bg-secondary">
+                    <ImportButton/>
+                </header>
+                <main className="flex flex-grow overflow-hidden">
+                    <Canvas/>
+                    <ControlPanel/>
+                </main>
             </div>
         </FileContext.Provider>
     );

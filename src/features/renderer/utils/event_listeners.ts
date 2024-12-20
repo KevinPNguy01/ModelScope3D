@@ -34,9 +34,9 @@ function canvasMouseUp(
     setYaw: (_ : number) => void, setDYaw: (_ : number) => void, setPitch: (_ : number) => void, setDPitch: (_ : number) => void,
 ) {
     return () =>  {
-        setYaw(yaw + dYaw);
+        setYaw((yaw + dYaw) % 360);
         setDYaw(0);
-        setPitch(pitch + dPitch);
+        setPitch(Math.min(90, Math.max(-90, pitch + dPitch)));
         setDPitch(0);
         mouseStartPos.current = null;
     }
@@ -51,4 +51,25 @@ function canvasMouseMove(
         setDYaw(300 * (e.clientX - mouseStartPos.current.clientX) / window.innerWidth);
         setDPitch(300 * (e.clientY - mouseStartPos.current.clientY) / window.innerHeight);
     }
+}
+
+export function addCanvasResizeHandler(canvas: MutableRefObject<HTMLCanvasElement | null>, setCanvasSize: (_: {clientWidth: number, clientHeight: number}) => void) {
+    const handleResize = canvasResize(canvas, setCanvasSize);
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+        window.removeEventListener("resize", handleResize);
+    }
+}
+
+function canvasResize(canvas: MutableRefObject<HTMLCanvasElement | null>, setCanvasSize: (_: {clientWidth: number, clientHeight: number}) => void) {
+    return () => {
+        if (!canvas.current || !canvas.current.parentElement) return;
+        const parent = canvas.current.parentElement;
+        setCanvasSize({clientWidth: parent.clientWidth, clientHeight: parent.clientHeight});
+        canvas.current.width = parent.clientWidth;
+        canvas.current.height = parent.clientHeight;
+    };
 }
