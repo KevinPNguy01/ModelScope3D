@@ -1,8 +1,8 @@
 import Backdrop from "@mui/material/Backdrop/Backdrop";
-import Button from "@mui/material/Button/Button";
 import Menu from "@mui/material/Menu/Menu";
 import MenuItem from "@mui/material/MenuItem/MenuItem";
 import { useState } from "react";
+import { MenuButton } from "../../../components/MenuButton";
 import { ModelType } from "../types";
 import { ImportOBJMenu } from "./ImportOBJMenu";
 import { ImportSTLMenu } from "./ImportSTLMenu";
@@ -21,12 +21,13 @@ export function ImportButton() {
     };
 
     return (
-        <div className="relative">
-            <Button
+        <div className="h-full flex flex-col justify-center">
+            <MenuButton
+                className={`${anchorEl ? "bg-tertiary": ""}`}
                 onClick={handleClick}
             >
                 Import
-            </Button>
+            </MenuButton>
             <Menu 
                 anchorEl={anchorEl}
                 open={open}

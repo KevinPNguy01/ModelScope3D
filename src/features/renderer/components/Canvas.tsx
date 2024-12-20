@@ -3,7 +3,6 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
 import { FileContext } from "../../../app/contexts/FileContext";
-import { SceneMenu } from "../../../components/SceneMenu";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
 import { selectFov, selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
@@ -170,7 +169,6 @@ export function Canvas() {
 				onMouseDown={canvasOnMouseDown(mouseStartPos)}
 				onWheel={canvasOnWheel(dist, setDist)}
 			/>
-			<SceneMenu/>
 		</div>
 	);
 }

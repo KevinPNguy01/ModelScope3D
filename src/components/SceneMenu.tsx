@@ -1,12 +1,11 @@
-import MenuIcon from '@mui/icons-material/Menu';
 import Checkbox from '@mui/material/Checkbox/Checkbox';
-import IconButton from "@mui/material/IconButton/IconButton";
 import Menu from '@mui/material/Menu/Menu';
 import MenuItem from '@mui/material/MenuItem/MenuItem';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectShowAxes, selectShowGrids } from '../stores/selectors/settings';
 import { toggleShowAxes, toggleShowGrids } from '../stores/slices/settings';
+import { MenuButton } from './MenuButton';
 
 export function SceneMenu() {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -26,12 +25,13 @@ export function SceneMenu() {
     const dispatch = useDispatch();
     
     return (
-        <div className="left-full -translate-x-full top-0 !absolute">
-            <IconButton 
+        <div>
+            <MenuButton 
+                className={`${anchorEl ? "bg-tertiary": ""}`}
                 onClick={handleClick}
             >
-                <MenuIcon style={{ color: 'white' }} />
-            </IconButton>
+                View
+            </MenuButton>
             <Menu
                 anchorEl={anchorEl}
                 open={open}
