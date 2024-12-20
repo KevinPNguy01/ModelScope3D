@@ -5,7 +5,7 @@ import { MeshWithBuffers } from "webgl-obj-loader";
 import { FileContext } from "../../../app/contexts/FileContext";
 import { SceneMenu } from "../../../components/SceneMenu";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
-import { selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
+import { selectFov, selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { AxisLinesMesh, GridLinesMesh, LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
@@ -31,6 +31,9 @@ export function Canvas() {
 	// Keep track of frame number to cancel in case of re-render.
 	const animationFrame = useRef(0);
 
+	// Selector that will update projection matrix
+	const fov = useSelector(selectFov);
+
 	// Selectors that will update model matrix
 	const position = useSelector(selectPosition);
     const scale = useSelector(selectScale);
@@ -51,7 +54,7 @@ export function Canvas() {
 	const [dYaw, setDYaw] = useState(0);
 	const [pitch, setPitch] = useState(30);
 	const [dPitch, setDPitch] = useState(0);
-	const [dist, setDist] = useState(2);
+	const [dist, setDist] = useState(6);
 
 	// State hook for keeping track of canvas size
 	const [canvasSize, setCanvasSize] = useState({clientWidth: 800, clientHeight: 600});
@@ -147,7 +150,7 @@ export function Canvas() {
 	useEffect(() => updateMaterial(glRef.current, pbrShader.current, material, defaultTextureRef.current), [material]);
 	useEffect(() => updateDirectionalLight(glRef.current, pbrShader.current, dirLight), [dirLight]);
 	useEffect(() => updatePointLight(glRef.current, pbrShader.current, pointLight), [pointLight]);
-	useEffect(() => updateProjection(glRef.current, pbrShader.current, lineShader.current, projectionMat.current, canvasSize), [canvasSize])
+	useEffect(() => updateProjection(glRef.current, pbrShader.current, lineShader.current, projectionMat.current, canvasSize, fov), [canvasSize, fov])
 	useEffect(() => updateCameraAndView(glRef.current, pbrShader.current, lineShader.current, viewMat.current, yaw+dYaw, pitch+dPitch, dist), [yaw, dYaw, pitch, dPitch, dist]);
 	useEffect(() => updateModelAndNormal(glRef.current, pbrShader.current, modelMat.current, normalMat.current, position, scale, rotation), [position, scale, rotation]);
 	useEffect(() => updateInverseScale(inverseScale.current, scale, dist), [scale, dist]);

@@ -1,12 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
+import { selectFov } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { updateStructUniform } from "../../../stores/slices/lighting";
+import { setFov } from "../../../stores/slices/settings";
 import { setPosition, setRotation, setScale } from "../../../stores/slices/transformations";
 import { TransformNumberInput } from "./NumberInput";
 
 export function ControlPanel() {
+    const fov = useSelector(selectFov);
     const position = useSelector(selectPosition);
     const scale = useSelector(selectScale);
     const rotation = useSelector(selectRotation);
@@ -36,6 +39,11 @@ export function ControlPanel() {
             onMouseDown={() => panelRef.current!.classList.add("pointer-events-none")}
             className="text-neutral-300 flex flex-col bg-secondary p-2 select-none"
         >
+            <span>Camera FOV</span>
+            <div className={`flex gap-1`}>
+                <TransformNumberInput value={fov} setValue={(val: number) => dispatch(setFov(val))} title="FOV" step={2} color="none"/>
+            </div>
+            <br/>
             <span>Position</span>
             <div className={`flex gap-1`}>
                 <TransformNumberInput value={position[0]} setValue={(val: number) => dispatch(setPosition({value: val, index: 0}))} title="Position X" step={.1} color="#ff0000"/>

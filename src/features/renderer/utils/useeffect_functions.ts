@@ -67,10 +67,10 @@ export function updateModelAndNormal(
 
 export function updateProjection(
     gl: WebGLRenderingContext, pbrShader: ShaderProgram, lineShader: ShaderProgram, 
-    projectionMatrix: mat4, canvas: {clientWidth: number, clientHeight: number}
+    projectionMatrix: mat4, canvas: {clientWidth: number, clientHeight: number}, fov: number
 ) {
     // Calculate projection matrix
-    calculateProjectionMatrix(projectionMatrix, canvas, 90, 0.001, Infinity);
+    calculateProjectionMatrix(projectionMatrix, canvas, fov, 0.001, Infinity);
     gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
 
     // Update projection matrix uniform for pbr shader
