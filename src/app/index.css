@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-    --color-primary: rgb(0, 128, 255);
+    --color-primary: #212e3c;
     --color-secondary: rgb(48, 48, 48);
     --color-tertiary: rgb(64, 64, 64);
     --color-quaternary: rgb(80, 80, 80);
@@ -84,4 +84,15 @@
     border-color: var(--corner-color);
     border-bottom-color: transparent !important;
     border-left-color: transparent !important;
+}
+
+.bg {
+    background: rgb(0,0,16);
+    background: linear-gradient(0deg, rgba(8,8,8,1) 0%, rgba(16,16,32,1) 100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    z-index:-1;
 }
