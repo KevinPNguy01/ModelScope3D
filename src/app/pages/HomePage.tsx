@@ -7,9 +7,11 @@ export function HomePage() {
 
     return (
         <div className="bg w-full h-screen flex flex-col">
-            <header className="border-b border-quaternary flex p-3 items-center gap-0.5">
-                <BiotechIcon sx={{height: 32, width: 32}} style={{color: "white"}}/>
-                <h2 className="text-white text-xl font-semibold">ModelScope</h2>
+            <header className="border-b border-quaternary">
+                <div className="cursor-pointer flex p-3 items-center  gap-0.5" onClick={() => navigate("/")}>
+                    <BiotechIcon sx={{height: 32, width: 32}} style={{color: "white"}}/>
+                    <h2 className="text-white text-xl font-semibold">ModelScope</h2>
+                </div>
             </header>
             <main className="flex flex-col items-center justify-center flex-grow">
                 <div className="w-fit flex items-center">
