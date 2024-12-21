@@ -35,11 +35,10 @@ export function updatePointLight(gl: WebGLRenderingContext, program: ShaderProgr
 
 export function updateCameraAndView(
     gl: WebGLRenderingContext, pbrShader: ShaderProgram, lineShader: ShaderProgram, 
-    viewMatrix: mat4, yaw: number, pitch: number, dist: number
+    viewMatrix: mat4, cameraPos: vec3, focalPoint: vec3
 ) {
-    // Calculate camera position and view matrix
-    const cameraPos = calculateCameraPosition(yaw, pitch , dist);
-    calculateViewMatrix(viewMatrix, cameraPos);
+    // Calculate view matrix
+    calculateViewMatrix(viewMatrix, cameraPos, focalPoint);
 
     // Update camera position and view matrix uniforms for pbr shader
     pbrShader.use();
@@ -88,4 +87,10 @@ export function updateInverseScale(inverseScale: vec3, scale: number[], dist: nu
     vec3.scale(inverseScale, inverseScale, scale[3]);
     vec3.scale(inverseScale, inverseScale, 1/dist)
     vec3.inverse(inverseScale, inverseScale);
+}
+
+export function updateCameraPos(setCameraPos: (_: vec3) => void, focalPoint: vec3, yaw: number, pitch: number, dist: number, ) {
+    const cameraPos = calculateCameraPosition(yaw, pitch, dist);
+    vec3.add(cameraPos, cameraPos, focalPoint);
+    setCameraPos(cameraPos);
 }

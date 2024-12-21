@@ -36,8 +36,8 @@ export function calculateModelMatrix(out: mat4, position: number[], scale: numbe
  * @param pitch Pitch (vertical rotation) of the camera
  * @param dist Distance from the origin
  */
-export function calculateViewMatrix(out: mat4, cameraPos: vec3) {
-    mat4.lookAt(out, cameraPos, [0, 0, 0], [0, 1, 0]);
+export function calculateViewMatrix(out: mat4, cameraPos: vec3, focalPoint: vec3) {
+    mat4.lookAt(out, cameraPos, focalPoint, [0, 1, 0]);
 }
 
 /**

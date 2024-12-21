@@ -1,3 +1,4 @@
+import { vec3 } from "gl-matrix";
 import { MutableRefObject } from "react";
 
 export function canvasOnWheel(dist: number, setDist: (_: number) => void) {
@@ -7,17 +8,27 @@ export function canvasOnWheel(dist: number, setDist: (_: number) => void) {
     }
 }
 
-export function canvasOnMouseDown(mouseStartPos: MutableRefObject<{clientX: number, clientY: number} | null>) {
-    return (e: React.MouseEvent) => mouseStartPos.current = e;
+export function canvasOnMouseDown(mouseStartPos: MutableRefObject<{clientX: number, clientY: number} | null>, mouseHoldType : MutableRefObject<"left" | "right" | null>) {
+    return (e: React.MouseEvent) => {
+        mouseStartPos.current = e;
+        switch (e.buttons) {
+            case 1:
+                mouseHoldType.current = "left";
+                break;
+            case 2:
+                mouseHoldType.current = "right";
+                break;
+        }
+    };
 }
 
 export function addCanvasMouseHandlers(
-    mouseStartPos: MutableRefObject<{clientX: number, clientY: number} | null>,
-    yaw: number, dYaw: number, pitch: number, dPitch: number,
-    setYaw: (_ : number) => void, setDYaw: (_ : number) => void, setPitch: (_ : number) => void, setDPitch: (_ : number) => void
+    mouseStartPos: MutableRefObject<{clientX: number, clientY: number}>, mouseHoldType : MutableRefObject<"left" | "right" | null>,
+    yaw: number, setYaw: (_ : number) => void, pitch: number,  setPitch: (_ : number) => void,
+    cameraPos: vec3, setCameraPos: (_: vec3) => void, focalPoint: vec3, setFocalPoint: (_: vec3) => void
 ) {
-    const handleMouseUp = canvasMouseUp(mouseStartPos, yaw, dYaw, pitch, dPitch, setYaw, setDYaw, setPitch, setDPitch);
-    const handleMouseMove = canvasMouseMove(mouseStartPos, setDYaw, setDPitch);
+    const handleMouseUp = canvasMouseUp(mouseHoldType);
+    const handleMouseMove = canvasMouseMove(mouseStartPos, mouseHoldType, yaw, setYaw, pitch, setPitch, cameraPos, setCameraPos, focalPoint, setFocalPoint);
 
     document.addEventListener("mouseup", handleMouseUp);
     document.addEventListener("mousemove", handleMouseMove);
@@ -28,28 +39,47 @@ export function addCanvasMouseHandlers(
     }
 }
 
-function canvasMouseUp(
-    mouseStartPos: MutableRefObject<{clientX: number, clientY: number} | null>,
-    yaw: number, dYaw: number, pitch: number, dPitch: number,
-    setYaw: (_ : number) => void, setDYaw: (_ : number) => void, setPitch: (_ : number) => void, setDPitch: (_ : number) => void,
-) {
+function canvasMouseUp(mouseHoldType: MutableRefObject<"left" | "right" | null>) {
     return () =>  {
-        setYaw((yaw + dYaw) % 360);
-        setDYaw(0);
-        setPitch(Math.min(90, Math.max(-90, pitch + dPitch)));
-        setDPitch(0);
-        mouseStartPos.current = null;
+        mouseHoldType.current = null;
     }
 }
 
 function canvasMouseMove(
-    mouseStartPos: MutableRefObject<{clientX: number, clientY: number} | null>,
-    setDYaw: (_ : number) => void, setDPitch: (_ : number) => void
+    mouseStartPos: MutableRefObject<{clientX: number, clientY: number}>, mouseHoldType : MutableRefObject<"left" | "right" | null>,
+    yaw: number, setYaw: (_ : number) => void, pitch: number, setPitch: (_ : number) => void,
+    cameraPos: vec3, setCameraPos: (_: vec3) => void, focalPoint: vec3, setFocalPoint: (_: vec3) => void
 ) {
     return (e: MouseEvent) => {
-        if (!mouseStartPos.current) return;
-        setDYaw(300 * (e.clientX - mouseStartPos.current.clientX) / window.innerWidth);
-        setDPitch(300 * (e.clientY - mouseStartPos.current.clientY) / window.innerHeight);
+        if (mouseHoldType.current === "left") {
+            setYaw((yaw + 300 * (e.clientX - mouseStartPos.current.clientX) / window.innerWidth) % 360);
+            setPitch(Math.max(-89.999, Math.min(89.999, pitch + 300 * (e.clientY - mouseStartPos.current.clientY) / window.innerHeight)));
+        } else if (mouseHoldType.current === "right") {
+            const camZ = vec3.create();
+            vec3.sub(camZ, focalPoint, cameraPos);
+            vec3.normalize(camZ, camZ);
+
+            const camX = vec3.create();
+            vec3.cross(camX, [0, 1, 0], camZ);
+            vec3.normalize(camX, camX);
+
+            const camY = vec3.create();
+            vec3.cross(camY, camZ, camX);
+            vec3.normalize(camY, camY);
+
+            const dx = 3 * (e.clientX - mouseStartPos.current.clientX) / window.innerWidth;
+            const dy = 3 * (e.clientY - mouseStartPos.current.clientY) / window.innerHeight;
+            const diff = vec3.create();
+            vec3.scale(camX, camX, dx);
+            vec3.scale(camY, camY, dy);
+            vec3.add(diff, camX, camY);
+
+            vec3.add(cameraPos, cameraPos, diff);
+            vec3.add(focalPoint, focalPoint, diff);
+            setCameraPos(vec3.clone(cameraPos));
+            setFocalPoint(vec3.clone(focalPoint));
+        }
+        mouseStartPos.current = e;
     }
 }
 

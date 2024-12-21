@@ -190,7 +190,7 @@ export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
 }
 
 /**
- * Normalize the given mesh by setting its maximum dimension size to 1, and centering it at the origin
+ * Normalize the given mesh by setting its maximum dimension size to 1, and centering it at the origin, above y = 0
  * @param mesh The mesh to normalize
  */
 function normalizeMesh(mesh: Mesh) {
@@ -211,11 +211,11 @@ function normalizeMesh(mesh: Mesh) {
     // Find the largest dimension and use to normalize the magnitude of the vertices
     const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
 
-    // Shift each coordinate by the mean in that dimension and then scale
+    // Shift each coordinate in each dimension and then scale
     for (let i = 0; i < mesh.vertices.length; i += 3) {
-        for (let j = 0; j < 3; ++j) {
-            mesh.vertices[i+j] = (mesh.vertices[i+j] - center[j]) / size;
-        }
+        mesh.vertices[i] = (mesh.vertices[i] - center[0]) / size;
+        mesh.vertices[i+1] = (mesh.vertices[i+1] - min[1]) / size;
+        mesh.vertices[i+2] = (mesh.vertices[i+2] - center[2]) / size;
     }
 }
 

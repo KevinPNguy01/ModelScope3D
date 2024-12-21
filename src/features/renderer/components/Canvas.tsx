@@ -15,7 +15,7 @@ import { loadModelFileFromPublic, loadOBJModel, loadSTLModel } from "../utils/mo
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
 import { drawLines, drawScene } from "../utils/render";
 import { takeScreenshot } from "../utils/screenshot";
-import { updateCameraAndView, updateDirectionalLight, updateInverseScale, updateMaterial, updateModelAndNormal, updatePointLight, updateProjection } from "../utils/useeffect_functions";
+import { updateCameraAndView, updateCameraPos, updateDirectionalLight, updateInverseScale, updateMaterial, updateModelAndNormal, updatePointLight, updateProjection } from "../utils/useeffect_functions";
 
 export function Canvas() {
 	const {objFile, mtlFile, stlFile, setObjFile, setStlFile} = useContext(FileContext);
@@ -54,12 +54,13 @@ export function Canvas() {
     const showGrids = useSelector(selectShowGrids);
 
 	// State hooks for keeping track of camera rotation and position
-	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
+	const mouseStartPos = useRef({clientX: -1, clientY: -1});
+	const mouseHoldType = useRef<"left" | "right" | null>(null);
+	const [cameraPos, setCameraPos] = useState(vec3.create());
+	const [focalPoint, setFocalPoint] = useState(vec3.create());
 	const [yaw, setYaw] = useState(-45);
-	const [dYaw, setDYaw] = useState(0);
 	const [pitch, setPitch] = useState(30);
-	const [dPitch, setDPitch] = useState(0);
-	const [dist, setDist] = useState(6);
+	const [dist, setDist] = useState(10);
 
 	// State hook for keeping track of canvas size
 	const [canvasSize, setCanvasSize] = useState({clientWidth: 800, clientHeight: 600});
@@ -158,12 +159,15 @@ export function Canvas() {
 	useEffect(() => updateDirectionalLight(glRef.current, pbrShader.current, dirLight), [dirLight]);
 	useEffect(() => updatePointLight(glRef.current, pbrShader.current, pointLight), [pointLight]);
 	useEffect(() => updateProjection(glRef.current, pbrShader.current, lineShader.current, projectionMat.current, canvasSize, fov), [canvasSize, fov])
-	useEffect(() => updateCameraAndView(glRef.current, pbrShader.current, lineShader.current, viewMat.current, yaw+dYaw, pitch+dPitch, dist), [yaw, dYaw, pitch, dPitch, dist]);
+	useEffect(() => updateCameraAndView(glRef.current, pbrShader.current, lineShader.current, viewMat.current, cameraPos, focalPoint), [cameraPos, focalPoint]);
 	useEffect(() => updateModelAndNormal(glRef.current, pbrShader.current, modelMat.current, normalMat.current, position, scale, rotation), [position, scale, rotation]);
 	useEffect(() => updateInverseScale(inverseScale.current, scale, dist), [scale, dist]);
+	useEffect(() => updateCameraPos(setCameraPos, focalPoint, yaw, pitch, dist), [focalPoint, yaw, pitch, dist]);
 
 	// Add event listeners for the canvas
-	useEffect(() => addCanvasMouseHandlers(mouseStartPos, yaw, dYaw, pitch, dPitch, setYaw, setDYaw, setPitch, setDPitch), [yaw, dYaw, pitch, dPitch]);
+	useEffect(() => addCanvasMouseHandlers(
+		mouseStartPos, mouseHoldType, yaw, setYaw, pitch, setPitch, cameraPos, setCameraPos, focalPoint, setFocalPoint
+	), [yaw, pitch, cameraPos, focalPoint]);
 	useEffect(() => addCanvasResizeHandler(canvasRef, setCanvasSize), []);
 
 	return (
@@ -174,8 +178,9 @@ export function Canvas() {
 				id="gl-canvas" 
 				width="0" 
 				height="0"
-				onMouseDown={canvasOnMouseDown(mouseStartPos)}
+				onMouseDown={canvasOnMouseDown(mouseStartPos, mouseHoldType)}
 				onWheel={canvasOnWheel(dist, setDist)}
+				onContextMenu={(e) => e.preventDefault()}
 			/>
 		</div>
 	);
