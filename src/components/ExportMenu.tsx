@@ -1,14 +1,14 @@
 import Menu from '@mui/material/Menu/Menu';
 import MenuItem from '@mui/material/MenuItem/MenuItem';
 import { useContext, useState } from 'react';
-import { ScreenshotContext } from '../app/contexts/ScreenshotContext';
+import { ExportContext } from '../app/contexts/ExportContext';
 import { MenuButton } from './MenuButton';
 
 export function ExportMenu() {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
 
-    const screenshot = useContext(ScreenshotContext);
+    const {exportScreenshot, exportSTL} = useContext(ExportContext);
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(e.currentTarget);
@@ -20,7 +20,12 @@ export function ExportMenu() {
 
     const handleExportPNG = () => {
         handleClose();
-        screenshot.current = true;
+        exportScreenshot.current = true;
+    };
+
+    const handleExportSTL = () => {
+        handleClose();
+        exportSTL.current = true;
     };
     
     return (
@@ -40,6 +45,11 @@ export function ExportMenu() {
                     onClick={handleExportPNG}
                 >
                     Export as PNG
+                </MenuItem>
+                <MenuItem 
+                    onClick={handleExportSTL}
+                >
+                    Export as STL
                 </MenuItem>
             </Menu>
         </div>

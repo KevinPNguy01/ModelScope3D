@@ -56,15 +56,17 @@ function loadBinaryStl(buffer: ArrayBuffer) {
         mesh.indicesPerMaterial[0].push(mesh.vertices.length/3, mesh.vertices.length/3+1, mesh.vertices.length/3+2);
 
         const nx = view.getFloat32(byteIndex, true);
-        const ny = view.getFloat32(byteIndex+4, true);
-        const nz = view.getFloat32(byteIndex+8, true);
+        const ny = view.getFloat32(byteIndex+8, true);
+        const nz = view.getFloat32(byteIndex+4, true);
         mesh.vertexNormals.push(nx, ny, nz, nx, ny, nz, nx, ny, nz);
         byteIndex += 12;
         
-        for (let i = 0; i < 9; ++i) {
-            const num = view.getFloat32(byteIndex, true);
-            mesh.vertices.push(num);
-            byteIndex += 4;
+        for (let i = 0; i < 3; ++i) {
+            const x = view.getFloat32(byteIndex, true);
+            const z = view.getFloat32(byteIndex+4, true);
+            const y = view.getFloat32(byteIndex+8, true);
+            mesh.vertices.push(x, y, z);
+            byteIndex += 12;
         }
         byteIndex += 2;
     }
@@ -97,8 +99,8 @@ function loadAsciiStl(data: string) {
                 break;
             case "facet": {
                 const x = Number.parseFloat(tokens[2]);
-                const y = Number.parseFloat(tokens[3]);
-                const z = Number.parseFloat(tokens[4]);
+                const y = Number.parseFloat(tokens[4]);
+                const z = Number.parseFloat(tokens[3]);
                 mesh.vertexNormals.push(x, y, z, x, y, z, x, y, z);
                 break;
             }
@@ -106,8 +108,8 @@ function loadAsciiStl(data: string) {
                 break;
             case "vertex": {
                 const x = Number.parseFloat(tokens[1]);
-                const y = Number.parseFloat(tokens[2]);
-                const z = Number.parseFloat(tokens[3]);
+                const y = Number.parseFloat(tokens[3]);
+                const z = Number.parseFloat(tokens[2]);
 
                 mesh.indicesPerMaterial[0].push(mesh.vertices.length/3);
                 mesh.vertices.push(x, y, z)

@@ -9,4 +9,6 @@ export function takeScreenshot(canvas: HTMLCanvasElement, screenshot: MutableRef
     link.href = dataUrl;
     link.download = 'ModelScope_screenshot.png';  // Set the download filename
     link.click();  // Trigger the download
+
+    URL.revokeObjectURL(dataUrl);
 }

@@ -2,14 +2,15 @@ import { mat4, vec3 } from "gl-matrix";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { MeshWithBuffers } from "webgl-obj-loader";
+import { ExportContext } from "../../../app/contexts/ExportContext";
 import { FileContext } from "../../../app/contexts/FileContext";
-import { ScreenshotContext } from "../../../app/contexts/ScreenshotContext";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
 import { selectFov, selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { AxisLinesMesh, GridLinesMesh, LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
 import { addCanvasMouseHandlers, addCanvasResizeHandler, canvasOnMouseDown, canvasOnWheel } from "../utils/event_listeners";
+import { exportAsSTL } from "../utils/export_stl";
 import { loadModelFileFromPublic, loadOBJModel, loadSTLModel } from "../utils/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../utils/mtl";
 import { drawLines, drawScene } from "../utils/render";
@@ -30,7 +31,7 @@ export function Canvas() {
 	const axisGuides = useRef<LineMesh>({} as LineMesh);
 
 	// Flag for whether to screenshot
-	const screenshot = useContext(ScreenshotContext);
+	const {exportScreenshot, exportSTL} = useContext(ExportContext);
 
 	// Keep track of frame number to cancel in case of re-render.
 	const animationFrame = useRef(0);
@@ -54,7 +55,7 @@ export function Canvas() {
 
 	// State hooks for keeping track of camera rotation and position
 	const mouseStartPos = useRef<{clientX: number, clientY: number} | null>(null);
-	const [yaw, setYaw] = useState(45);
+	const [yaw, setYaw] = useState(-45);
 	const [dYaw, setDYaw] = useState(0);
 	const [pitch, setPitch] = useState(30);
 	const [dPitch, setDPitch] = useState(0);
@@ -129,7 +130,7 @@ export function Canvas() {
 			const gl = glRef.current!;
 
 			// Clear canvas
-			gl.clearColor(.235, .235, .235, screenshot.current ? 0 : 1);
+			gl.clearColor(.235, .235, .235, exportScreenshot.current ? 0 : 1);
 			gl.clearDepth(1);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			gl.depthFunc(gl.LEQUAL);
@@ -139,12 +140,13 @@ export function Canvas() {
 			if (showGrids) drawLines(glRef.current, lineShader.current, mat4.create(), vec3.fromValues(1, 1, 1), gridGuides.current, false);
 			if (showAxes && meshesRef.current.length) drawLines(glRef.current, lineShader.current, modelMat.current, inverseScale.current, axisGuides.current, true);
 
-			if (screenshot.current) takeScreenshot(canvasRef.current!, screenshot);
+			if (exportScreenshot.current) takeScreenshot(canvasRef.current!, exportScreenshot);
+			if (exportSTL.current) exportAsSTL(meshesRef.current, modelMat.current, normalMat.current, exportSTL);
 			animationFrame.current = requestAnimationFrame(render);
 		}
 		animationFrame.current = requestAnimationFrame(render);
 		return () => cancelAnimationFrame(animationFrame.current);
-	}, [screenshot, showAxes, showGrids]);
+	}, [exportSTL, exportScreenshot, showAxes, showGrids]);
 
 	// Update meshes/mtl when imported files change
 	useEffect(() => {(async () => {if (stlFile) meshesRef.current = await loadSTLModel(glRef.current, stlFile)})()}, [stlFile]);
