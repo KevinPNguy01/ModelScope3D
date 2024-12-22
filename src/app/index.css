@@ -87,12 +87,17 @@
 }
 
 .bg {
-    background: rgb(0,0,16);
-    background: linear-gradient(0deg, rgba(8,8,8,1) 0%, rgba(16,16,32,1) 100%);
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 100vw;
-    z-index:-1;
+    background: linear-gradient(0deg, rgba(48,48,48,1) 0%, rgba(16,16,16,1) 100%);
+}
+
+h3 {
+    font-size: 1.6em;
+    color: rgb(224, 224, 224)
+}
+
+p {
+    font-size: 1.1em;
+    white-space: pre-line;
+    line-height: 1.3em;
+    color: rgb(192, 192, 192);
 }
