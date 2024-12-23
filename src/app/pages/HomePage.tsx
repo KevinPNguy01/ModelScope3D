@@ -7,7 +7,7 @@ export function HomePage() {
     const navigate = useNavigate();
 
     return (
-        <div>
+        <div className="flex flex-col">
             <div className="bg w-full h-screen flex flex-col">
                 <header className="border-b border-quaternary">
                     <div className="cursor-pointer flex p-3 items-center  gap-0.5" onClick={() => navigate("/")}>
@@ -15,13 +15,12 @@ export function HomePage() {
                         <h2 className="text-white text-xl font-semibold">ModelScope</h2>
                     </div>
                 </header>
-                <main className="flex flex-col items-center justify-center flex-grow">
+                <main className="flex flex-col items-center justify-center flex-grow gap-4 py-16">
                     <div className="w-fit flex items-center">
                         <BiotechIcon sx={{height: 64, width: 64}} style={{color: "white"}}/>
                         <h2 className="text-white text-5xl font-semibold">ModelScope</h2>
                     </div>
                     <span className="text-white text-lg">A lightweight 3D model editor</span>
-                    <br/>
                     <Button 
                         variant="contained" 
                         className="!p-3 !rounded-none"
@@ -29,6 +28,8 @@ export function HomePage() {
                     >
                         Open Web App
                     </Button>
+                    <br/>
+                    <img className="max-w-[60%] shadow-lg border border-tertiary bg-secondary p-2 rounded" src="./img/ModelScope.PNG"/>
                 </main>
             </div>
             <div className="bg-secondary flex flex-col items-center py-8">
