@@ -1,8 +1,8 @@
 import { mat4, vec3 } from "gl-matrix";
 import { MeshWithBuffers } from "webgl-obj-loader";
+import { MtlWithTextures } from "../../../utils/models/mtl";
 import { LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
-import { MtlWithTextures } from "./mtl";
 
 export function drawScene(gl: WebGLRenderingContext, program: ShaderProgram, meshes: MeshWithBuffers[], mtl: MtlWithTextures, defaultTexture: WebGLTexture | null) {
     if (!meshes.length) return;

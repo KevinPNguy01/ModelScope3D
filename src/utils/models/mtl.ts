@@ -75,6 +75,13 @@ export default class Mtl {
     }
 }
 
+/**
+ * Takes in the WebGL context and an Mtl, then creates and appends the buffers
+ * to the Mtl object as attributes.
+ * @param gl The WebGLRenderingContext
+ * @param mtl The Mtl to generate buffers for
+ * @returns An MtlWithBuffers object
+ */
 export function initMtlTextures(gl: WebGLRenderingContext, mtl: Mtl) {
     const mtlWithTextures = mtl as MtlWithTextures;
     mtlWithTextures.textures = new Map<string, WebGLTexture>();
