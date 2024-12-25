@@ -59,7 +59,7 @@ function loadAsciiStl(data: string) {
     mesh.indicesPerMaterial = [[]];
 
     data.split("\n").forEach(line => {
-        const tokens = line.trim().split(" ");
+        const tokens = line.trim().split(/\s+/);
         switch (tokens[0]) {
             case "facet": {
                 // Add indices

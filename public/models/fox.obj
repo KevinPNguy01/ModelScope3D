@@ -1,5 +1,5 @@
 # Made in Blockbench 4.11.2
-mtllib materials.mtl
+mtllib fox.mtl
 
 o head
 v 0.25 0.5603172270410928 -0.08192210017240839

@@ -6,8 +6,9 @@ import { MenuButton } from "../../../components/MenuButton";
 import { ModelType } from "../types";
 import { ImportOBJMenu } from "./ImportOBJMenu";
 import { ImportSTLMenu } from "./ImportSTLMenu";
+import { LoadPresetMenu } from "./LoadPresetMenu";
 
-export function ImportButton() {
+export function FileMenu() {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const [modelMenu, setModelMenu] = useState<ModelType>(ModelType.NONE);
     const open = Boolean(anchorEl);
@@ -26,13 +27,18 @@ export function ImportButton() {
                 className={`${anchorEl ? "bg-tertiary": ""}`}
                 onClick={handleClick}
             >
-                Import
+                File
             </MenuButton>
             <Menu 
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
             >
+                <MenuItem
+                    onClick={() => {handleClose(); setModelMenu(ModelType.PRESET)}}
+                >
+                    Load Preset
+                </MenuItem>
                 <MenuItem
                     onClick={() => {handleClose(); setModelMenu(ModelType.STL)}}
                 >
@@ -44,6 +50,13 @@ export function ImportButton() {
                     Import OBJ
                 </MenuItem>
             </Menu>
+            <Backdrop
+                open={modelMenu === ModelType.PRESET}
+                onClick={() => setModelMenu(ModelType.NONE)}
+                className="z-10"
+            >
+                <LoadPresetMenu onClick={() => setModelMenu(ModelType.NONE)}/>
+            </Backdrop>
             <Backdrop
                 open={modelMenu === ModelType.OBJ}
                 onClick={() => setModelMenu(ModelType.NONE)}

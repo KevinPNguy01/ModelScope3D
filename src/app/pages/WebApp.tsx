@@ -2,7 +2,7 @@ import BiotechIcon from '@mui/icons-material/Biotech';
 import { useRef, useState } from "react";
 import { ExportMenu } from '../../components/ExportMenu';
 import { SceneMenu } from '../../components/SceneMenu';
-import { ImportButton } from "../../features/import_menu/components/ImportButton";
+import { FileMenu } from '../../features/file_menu/components/FileMenu';
 import { Canvas } from "../../features/renderer/components/Canvas";
 import { ControlPanel } from "../../features/transform/components/ControlPanel";
 import { ExportContext } from '../contexts/ExportContext';
@@ -25,7 +25,7 @@ export function WebApp() {
                         <BiotechIcon sx={{height: 28, width: 28}} style={{color: "white"}}/>
                         <h2 className="text-white text-lg font-semibold">ModelScope</h2>
                     </div>
-                    <ImportButton/>
+                    <FileMenu/>
                     <ExportMenu/>
                     <SceneMenu/>
                 </header>

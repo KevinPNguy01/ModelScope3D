@@ -1,6 +1,6 @@
 import { vec3 } from "gl-matrix";
 import { Mesh, initMeshBuffers } from "webgl-obj-loader";
-import { normalizeMesh, splitMesh } from "./models";
+import { loadModelFileFromPublic, normalizeMesh, splitMesh } from "./models";
 
 /**
  * Given a file representing an OBJ model, generate a MeshWithBuffers object for it.
@@ -60,6 +60,21 @@ export async function loadOBJModel(gl: WebGLRenderingContext, file: File) {
     }
 
     return splitMesh(normalizeMesh(mesh)).map(mesh => initMeshBuffers(gl, mesh));
+}
+
+/**
+ * Parses an OBJ file and retrieves the associated MTL file if it exists.
+ * @param objFile The OBJ file to parse
+ * @returns The found MTL file, or null if it doesn't exist
+ */
+export async function getMtlFromObj(objFile: File) {
+    for (const line of (await objFile.text()).trim().split("\n")) {
+        const tokens = line.split(/\s+/);
+        if (tokens[0] !== "mtllib") continue;
+        const file = await loadModelFileFromPublic(tokens[1]);
+        return file;
+    }
+    return null;
 }
 
 function getVertex(vertices: number[], index: number) {
