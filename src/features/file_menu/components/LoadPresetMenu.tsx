@@ -24,11 +24,11 @@ export function LoadPresetMenu({onClick}: {onClick: () => void}) {
         onClick();
         const file = await loadModelFileFromPublic(selectedModel);
         if (!file) return;
-        if (file.type === "model/obj") {
+        if (file.name.endsWith(".obj")) {
             setObjFile(file);
             const mtlFile = await getMtlFromObj(file);
             setMtlFile(mtlFile);
-        } else if (file.type === "model/stl") {
+        } else if (file.name.endsWith(".stl")) {
             setStlFile(file);
         }
         setSelectedModel("");

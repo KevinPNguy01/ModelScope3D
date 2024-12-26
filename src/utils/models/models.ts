@@ -8,8 +8,7 @@ import { Mesh } from "webgl-obj-loader";
 export async function loadModelFileFromPublic(path: string) {
     const response = await fetch("./models/" + path);
     const blob = await response.blob();
-    const file = new File([blob], path, { type: blob.type });
-    return file.type === "model/obj" || file.type === "model/stl" || file.type === "model/mtl" ? file : null;
+    return new File([blob], path, { type: blob.type });
 }
 
 /**

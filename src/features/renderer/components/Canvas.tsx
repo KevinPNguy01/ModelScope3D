@@ -89,12 +89,12 @@ export function Canvas() {
 			const file = await loadModelFileFromPublic("fox.obj");
 			const mtlFile = await loadModelFileFromPublic("fox.mtl");
 			if (file === null) return;
-			if (file.type === "model/obj") {
+			if (file.name.endsWith(".obj")) {
 				setObjFile(file);
 				setStlFile(null);
 				setMtlFile(mtlFile);
 			}
-			else if (file.type === "model/stl") {
+			else if (file.name.endsWith(".stl")) {
 				setStlFile(file);
 				setObjFile(null);
 			}
