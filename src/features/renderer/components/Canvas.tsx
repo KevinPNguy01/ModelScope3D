@@ -11,6 +11,7 @@ import { loadModelFileFromPublic } from "../../../utils/models/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../../../utils/models/mtl";
 import { loadOBJModel } from "../../../utils/models/obj_loader";
 import { loadSTLModel } from "../../../utils/models/stl_loader";
+import { loadTextures } from "../../../utils/models/textures";
 import { AxisLinesMesh, GridLinesMesh, LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
 import { addCanvasMouseHandlers, addCanvasResizeHandler, canvasOnMouseDown, canvasOnWheel } from "../utils/event_listeners";
@@ -20,7 +21,7 @@ import { takeScreenshot } from "../utils/screenshot";
 import { updateCameraAndView, updateCameraPos, updateDirectionalLight, updateInverseScale, updateMaterial, updateModelAndNormal, updatePointLight, updateProjection } from "../utils/useeffect_functions";
 
 export function Canvas() {
-	const {objFile, mtlFile, stlFile, setObjFile, setStlFile} = useContext(FileContext);
+	const {objFile, mtlFile, stlFile, setObjFile, setStlFile, setMtlFile, textureFiles} = useContext(FileContext);
 
 	const glRef = useRef<WebGLRenderingContext>(null as unknown as WebGLRenderingContext);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -86,10 +87,12 @@ export function Canvas() {
 		// Initialize default model
 		(async () => {
 			const file = await loadModelFileFromPublic("fox.obj");
+			const mtlFile = await loadModelFileFromPublic("fox.mtl");
 			if (file === null) return;
 			if (file.type === "model/obj") {
 				setObjFile(file);
 				setStlFile(null);
+				setMtlFile(mtlFile);
 			}
 			else if (file.type === "model/stl") {
 				setStlFile(file);
@@ -125,7 +128,7 @@ export function Canvas() {
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-	}, [setObjFile, setStlFile])
+	}, [setMtlFile, setObjFile, setStlFile])
 
 	// Start the render loop
 	useEffect(() => {
@@ -154,7 +157,10 @@ export function Canvas() {
 	// Update meshes/mtl when imported files change
 	useEffect(() => {(async () => {if (stlFile) meshesRef.current = await loadSTLModel(glRef.current, stlFile)})()}, [stlFile]);
 	useEffect(() => {(async () => {if (objFile) meshesRef.current = await loadOBJModel(glRef.current, objFile)})()}, [objFile]);
-	useEffect(() => {(async () => {if (mtlFile) mtlRef.current = await loadMtlFile(glRef.current, mtlFile)})()}, [mtlFile]);
+	useEffect(() => {(async () => {
+		if (mtlFile) mtlRef.current = await loadMtlFile(glRef.current, mtlFile)
+		loadTextures(glRef.current, textureFiles, mtlRef.current!)
+	})()}, [mtlFile, textureFiles]);
 
 	// Update uniforms when control scene parameters change
 	useEffect(() => updateMaterial(glRef.current, pbrShader.current, material, defaultTextureRef.current), [material]);

@@ -12,12 +12,13 @@ export function WebApp() {
     const [objFile, setObjFile] = useState<File | null>(null);
     const [mtlFile, setMtlFile] = useState<File | null>(null);
     const [stlFile, setStlFile] = useState<File | null>(null);
+    const [textureFiles, setTextureFiles] = useState<File[]>([]);
 
     const exportScreenshot = useRef(false);
     const exportSTL = useRef(false);
 
     return (
-        <FileContext.Provider value={{objFile, setObjFile, mtlFile, setMtlFile, stlFile, setStlFile}}>
+        <FileContext.Provider value={{objFile, setObjFile, mtlFile, setMtlFile, stlFile, setStlFile, textureFiles, setTextureFiles}}>
         <ExportContext.Provider value={{exportScreenshot, exportSTL}}>
             <div className="w-full h-screen flex flex-col overflow-hidden">
                 <header className="flex bg-secondary items-center flex-shrink">

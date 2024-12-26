@@ -7,4 +7,6 @@ export const FileContext = createContext({
     setMtlFile: (() =>{}) as React.Dispatch<React.SetStateAction<File | null>>,
     stlFile: null as File | null,
     setStlFile: (() =>{}) as React.Dispatch<React.SetStateAction<File | null>>,
+    textureFiles: [] as File[],
+    setTextureFiles: (() =>{}) as React.Dispatch<React.SetStateAction<File[]>>
 });

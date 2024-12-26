@@ -5,12 +5,10 @@ type Material = {
     ambientMap: string
     diffuseMap: string
     specularMap: string
-    defaultTexture: WebGLTexture
 }
 
 export type MtlWithTextures = Mtl & {
     textures: Map<string, WebGLTexture>
-    defaultTexture: WebGLTexture
 }
 
 export async function loadMtlFile(gl: WebGLRenderingContext, file: File) {

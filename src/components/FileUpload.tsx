@@ -2,7 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import { useEffect, useRef } from "react";
 
-export function FileUpload({accept, label, fileState}: {accept: string, label: string, fileState: [File | null, (file: File | null) => void]}) {
+export function FileUpload({multiple, accept, label, fileState}: {multiple: boolean, accept: string, label: string, fileState: [File[], (_: File[]) => void]}) {
     const [file, setFile] = fileState;
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -12,10 +12,7 @@ export function FileUpload({accept, label, fileState}: {accept: string, label: s
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFile = e.target.files.item(0);
-            if (newFile) {
-                setFile(newFile);
-            }
+            setFile(Array.from(e.target.files));
         }
     };
 
@@ -30,7 +27,7 @@ export function FileUpload({accept, label, fileState}: {accept: string, label: s
                 <span
                     className="text-sm text-neutral-400"
                 >
-                    {file?.name || "Choose File"}
+                    {file.map(f => f.name).join(", ") || "Choose File"}
                 </span>
                 {file ? (
                     <CloseIcon
@@ -39,7 +36,7 @@ export function FileUpload({accept, label, fileState}: {accept: string, label: s
                         className="cursor-pointer"
                         onClick={(e) => {
                             e.preventDefault();
-                            setFile(null);
+                            setFile([]);
                             if (inputRef.current) inputRef.current.value = "";
                         }}
                     />
@@ -51,6 +48,7 @@ export function FileUpload({accept, label, fileState}: {accept: string, label: s
                     />
                 )}
                 <input 
+                    multiple={multiple}
                     ref={inputRef}
                     onChange={handleFileChange} 
                     type="file"

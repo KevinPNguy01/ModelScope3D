@@ -5,14 +5,14 @@ import { FileContext } from "../../../app/contexts/FileContext";
 import { FileUpload } from "../../../components/FileUpload";
 
 export function ImportSTLMenu({onClick}: {onClick: () => void}) {
-    const [stlFile, setStlFile] = useState<File | null>(null);
+    const [stlFile, setStlFile] = useState<File[]>([]);
 
     const {setObjFile: setGlobalObjFile, setMtlFile: setGlobalMtlFile, setStlFile: setGlobalStlFile} = useContext(FileContext);
 
     return (
         <Card className="w-1/3 h-fit !bg-secondary py-4 px-6 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
             <h1 className="text-neutral-300 font-semibold text-lg">Import STL Model</h1>
-            <FileUpload accept=".stl" label={"STL File:"} fileState={[stlFile, setStlFile]}/>
+            <FileUpload multiple={false} accept=".stl" label={"STL File:"} fileState={[stlFile, setStlFile]}/>
             <div className="flex w-full justify-end gap-2 pt-2">
                 <Button
                     size="small"
@@ -21,10 +21,10 @@ export function ImportSTLMenu({onClick}: {onClick: () => void}) {
                         textTransform: "none"
                     }}
                     onClick={() => {
-                        setGlobalStlFile(stlFile);
+                        setGlobalStlFile(stlFile[0]);
                         setGlobalObjFile(null);
                         setGlobalMtlFile(null);
-                        setStlFile(null);
+                        setStlFile([]);
                         onClick();
                     }}
                 >
