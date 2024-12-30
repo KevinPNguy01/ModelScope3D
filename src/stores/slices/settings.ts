@@ -3,9 +3,10 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 export const settingsSlice = createSlice({
     name: "settings",
     initialState: {
-        fov: 10,
+        fov: 45,
         showGrids: true,
-        showAxes: true
+        showAxes: true,
+        showSidePanel: true
     },
     reducers: {
         setFov: (state, action: PayloadAction<number>) => {
@@ -16,9 +17,12 @@ export const settingsSlice = createSlice({
         },
         toggleShowAxes: (state) => {
             state.showAxes = !state.showAxes;  
+        },
+        toggleShowSidePanel: (state) => {
+            state.showSidePanel = !state.showSidePanel;  
         }
     }
 });
 
-export const {setFov, toggleShowGrids, toggleShowAxes} = settingsSlice.actions;
+export const {setFov, toggleShowGrids, toggleShowAxes, toggleShowSidePanel} = settingsSlice.actions;
 export default settingsSlice.reducer;

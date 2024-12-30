@@ -1,7 +1,7 @@
 import BiotechIcon from '@mui/icons-material/Biotech';
 import { useRef, useState } from "react";
 import { ExportMenu } from '../../components/ExportMenu';
-import { SceneMenu } from '../../components/SceneMenu';
+import { ViewMenu } from '../../components/ViewMenu';
 import { FileMenu } from '../../features/file_menu/components/FileMenu';
 import { Canvas } from "../../features/renderer/components/Canvas";
 import { ControlPanel } from "../../features/transform/components/ControlPanel";
@@ -28,7 +28,7 @@ export function WebApp() {
                     </div>
                     <FileMenu/>
                     <ExportMenu/>
-                    <SceneMenu/>
+                    <ViewMenu/>
                 </header>
                 <main className="flex flex-grow overflow-hidden">
                     <Canvas/>

@@ -94,7 +94,7 @@ export function addCanvasResizeHandler(canvas: MutableRefObject<HTMLCanvasElemen
     }
 }
 
-function canvasResize(canvas: MutableRefObject<HTMLCanvasElement | null>, setCanvasSize: (_: {clientWidth: number, clientHeight: number}) => void) {
+export function canvasResize(canvas: MutableRefObject<HTMLCanvasElement | null>, setCanvasSize: (_: {clientWidth: number, clientHeight: number}) => void) {
     return () => {
         if (!canvas.current || !canvas.current.parentElement) return;
         const parent = canvas.current.parentElement;

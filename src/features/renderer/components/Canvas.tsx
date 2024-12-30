@@ -5,7 +5,7 @@ import { MeshWithBuffers } from "webgl-obj-loader";
 import { ExportContext } from "../../../app/contexts/ExportContext";
 import { FileContext } from "../../../app/contexts/FileContext";
 import { selectDirLight, selectMaterial, selectPointLight } from "../../../stores/selectors/lighting";
-import { selectFov, selectShowAxes, selectShowGrids } from "../../../stores/selectors/settings";
+import { selectFov, selectShowAxes, selectShowGrids, selectShowSidePanel } from "../../../stores/selectors/settings";
 import { selectPosition, selectRotation, selectScale } from "../../../stores/selectors/transformations";
 import { loadModelFileFromPublic } from "../../../utils/models/models";
 import Mtl, { initMtlTextures, loadMtlFile, MtlWithTextures } from "../../../utils/models/mtl";
@@ -14,7 +14,7 @@ import { loadSTLModel } from "../../../utils/models/stl_loader";
 import { loadTextures } from "../../../utils/models/textures";
 import { AxisLinesMesh, GridLinesMesh, LineMesh } from "../types/LineMesh";
 import { ShaderProgram } from "../types/ShaderProgram";
-import { addCanvasMouseHandlers, addCanvasResizeHandler, canvasOnMouseDown, canvasOnWheel } from "../utils/event_listeners";
+import { addCanvasMouseHandlers, addCanvasResizeHandler, canvasOnMouseDown, canvasOnWheel, canvasResize } from "../utils/event_listeners";
 import { exportAsSTL } from "../utils/export_stl";
 import { drawLines, drawScene } from "../utils/render";
 import { takeScreenshot } from "../utils/screenshot";
@@ -63,10 +63,11 @@ export function Canvas() {
 	const [focalPoint, setFocalPoint] = useState(vec3.create());
 	const [yaw, setYaw] = useState(-45);
 	const [pitch, setPitch] = useState(30);
-	const [dist, setDist] = useState(10);
+	const [dist, setDist] = useState(2);
 
 	// State hook for keeping track of canvas size
 	const [canvasSize, setCanvasSize] = useState({clientWidth: 800, clientHeight: 600});
+	const showSidePanel = useSelector(selectShowSidePanel);
 
 	// Transformation matrices
 	const modelMat = useRef(mat4.create());
@@ -177,6 +178,7 @@ export function Canvas() {
 		mouseStartPos, mouseHoldType, yaw, setYaw, pitch, setPitch, cameraPos, setCameraPos, focalPoint, setFocalPoint
 	), [yaw, pitch, cameraPos, focalPoint]);
 	useEffect(() => addCanvasResizeHandler(canvasRef, setCanvasSize), []);
+	useEffect(() => canvasResize(canvasRef, setCanvasSize)(), [showSidePanel])
 
 	return (
 		<div className="relative flex flex-grow">
