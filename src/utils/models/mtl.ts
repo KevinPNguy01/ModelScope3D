@@ -49,10 +49,10 @@ export default class Mtl {
                     }
                     break;
                 case 'ks': // Specular color
-                if (currentMaterial) {
-                    this.materials.get(currentMaterial)!.specular = args.map(parseFloat);
-                }
-                break;
+                    if (currentMaterial) {
+                        this.materials.get(currentMaterial)!.specular = args.map(parseFloat);
+                    }
+                    break;
                 case 'map_kd': // Diffuse texture map
                     if (currentMaterial) {
                         this.materials.get(currentMaterial)!.diffuseMap = args.join(' ');
@@ -85,10 +85,23 @@ export function initMtlTextures(gl: WebGLRenderingContext, mtl: Mtl) {
     mtlWithTextures.textures = new Map<string, WebGLTexture>();
     
     for (const key of mtl.materials.keys()) {
-        mtlWithTextures.textures.set(key, loadTexture(gl, mtl.materials.get(key)!.diffuseMap));
+        const material = mtl.materials.get(key)!;
+        if (material.diffuse) mtlWithTextures.textures.set(key, createTexture(gl, material.diffuse));
+        if (material.diffuseMap) mtlWithTextures.textures.set(key, loadTexture(gl, material.diffuseMap));
     }
+    console.log(mtlWithTextures)
 
     return mtlWithTextures;
+}
+
+function createTexture(gl: WebGLRenderingContext, color: number[]) {
+    const texture = gl.createTexture();
+    if (texture === null) throw new Error("Error creating texture");
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255 * color[0], 255 * color[1], 255 * color[2], 255]));
+
+    return texture;
 }
 
 function loadTexture(gl: WebGLRenderingContext, path: string) {
